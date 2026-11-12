@@ -1,0 +1,96 @@
+name: CI
+
+# Setiap push dan pull request menjalankan seluruh tes, build aset, dan cek
+# format kode. Hasilnya tampil sebagai badge di README.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+# Hanya membaca kode. Trigger `pull_request` tidak pernah memberi secret ke
+# kode dari PR luar; jangan diganti dengan `pull_request_target`.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tes
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_DATABASE: bisnis_fashion_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: intl, bcmath, pdo_mysql, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer/files
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci --ignore-scripts
+
+      # Build ikut diuji supaya kegagalan Vite ketahuan di sini, bukan saat deploy.
+      - run: npm run build
+
+      - name: Siapkan .env untuk tes
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Jalankan tes
+        run: php artisan test
+
+      - name: Cek format kode
+        run: ./vendor/bin/pint --test
+
+  audit:
+    name: Audit dependensi
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          tools: composer:v2
+
+      # Membaca composer.lock dan package-lock.json saja, tanpa install penuh.
+      - run: composer audit --no-interaction
+      - run: npm audit --audit-level=high

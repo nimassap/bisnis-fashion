@@ -1,0 +1,92 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+
+    'title' => 'Penjualan',
+    'subtitle' => 'Catat tiap pesanan, satuan atau paket couple. Laporan, stok, dan Buku Kas ikut terisi.',
+
+    'add' => 'Catat pesanan',
+    'edit' => 'Ubah pesanan',
+    'channel' => 'Channel',
+    'no_channel' => 'Tanpa channel',
+    'inactive' => 'nonaktif',
+    'ordered_on' => 'Tanggal pesanan',
+    'reference' => 'No. pesanan',
+    'reference_placeholder' => 'Dari marketplace',
+    'customer' => 'Nama pembeli',
+    'notes' => 'Catatan',
+    'collection' => 'Koleksi',
+    'campaign' => 'Dari campaign',
+    'campaign_hint' => 'Misalnya pembeli memakai kode voucher endorse.',
+    'discount' => 'Diskon / voucher toko',
+    'discount_hint' => 'Potongan yang ditanggung toko untuk pesanan ini.',
+
+    'lines' => 'Isi pesanan',
+    'single' => 'Satuan',
+    'bundle' => 'Paket couple',
+    'couple_set' => 'Paket',
+    'model' => 'Model',
+    'women_size' => 'Ukuran cewek',
+    'men_size' => 'Ukuran cowok',
+    'quantity' => 'Jumlah',
+    'price' => 'Harga satuan',
+    'bundle_price' => 'Harga per paket',
+    'add_bundle' => 'Tambah paket couple',
+    'add_single' => 'Tambah satuan',
+    'remove_line' => 'Hapus baris',
+    'set_incomplete' => 'Koleksi ini belum punya model cewek dan cowok.',
+
+    'record_cash' => 'Catat uang masuk di Buku Kas',
+    'record_cash_hint' => 'Yang dicatat adalah uang diterima setelah potongan channel.',
+    'cash_description' => 'Penjualan :channel :reference',
+
+    'saved' => 'Pesanan disimpan.',
+    'cancelled' => 'Pesanan dibatalkan. Catatannya di Buku Kas dihapus dan stok kembali.',
+    'restored' => 'Pesanan dipulihkan.',
+    'deleted' => 'Pesanan dihapus.',
+    'cancel' => 'Batalkan pesanan',
+    'restore' => 'Pulihkan pesanan',
+    'delete' => 'Hapus pesanan',
+    'delete_body' => 'Pesanan ini beserta catatannya di Buku Kas akan dihapus permanen. Kalau pesanannya batal, lebih baik pakai "Batalkan pesanan" supaya riwayatnya tetap ada.',
+
+    'orders' => 'Pesanan',
+    'order_count' => '{1} 1 pesanan|[2,*] :count pesanan',
+    'average_order' => 'Rata-rata',
+    'pieces_sold' => 'Pcs terjual',
+    'bundles_sold' => '{0} Belum ada paket couple|{1} Termasuk 1 paket couple|[2,*] Termasuk :count paket couple',
+    'revenue' => 'Omzet',
+    'fees' => 'Potongan channel',
+    'net' => 'Diterima bersih',
+    'net_short' => 'bersih',
+    'net_hint' => 'Omzet dikurangi potongan channel.',
+    'gross_profit' => 'Laba kotor',
+    'gross_profit_hint' => 'Diterima bersih dikurangi HPP barang terjual.',
+    'missing_cost' => '{1} 1 pcs belum punya HPP, tidak dihitung.|[2,*] :count pcs belum punya HPP, tidak dihitung.',
+
+    'by_model' => 'Per model',
+    'by_channel' => 'Per channel',
+    'by_size' => 'Per ukuran',
+    'by_color' => 'Per warna',
+    'no_color' => 'Tanpa warna',
+    'nothing_sold' => 'Belum ada penjualan di periode ini.',
+    'sell_through' => 'terjual :percent%',
+    'left_short' => 'sisa :count',
+
+    'low_stock' => 'Stok menipis',
+    'low_stock_hint' => 'Varian dengan sisa :count pcs atau kurang. Saatnya pertimbangkan restock.',
+
+    'order_list' => 'Daftar pesanan',
+    'empty' => 'Belum ada pesanan di periode ini',
+    'empty_hint' => 'Catat pesanan pertama dari Shopee atau TikTok Shop.',
+
+    'stock' => 'Stok per varian',
+    'stock_hint' => 'Isi jumlah yang diproduksi per ukuran dan warna. Sisa stok dihitung otomatis dari pesanan.',
+    'stock_needs_sizes' => 'Isi size chart dulu supaya ukurannya muncul di sini.',
+    'produced' => 'Diproduksi',
+    'sold_left' => 'terjual :sold · sisa :left',
+    'save_stock' => 'Simpan stok',
+    'stock_saved' => 'Stok disimpan.',
+
+];

@@ -1,0 +1,33 @@
+name: Usulan fitur
+description: Ide fitur baru atau perbaikan cara kerja.
+title: "[Fitur] "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Masalah yang ingin diselesaikan
+      description: Apa yang sekarang merepotkan atau belum bisa dilakukan?
+      placeholder: Contoh — pesanan Shopee harus diketik satu per satu.
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: Usulan
+      description: Seperti apa fitur yang dibayangkan?
+      placeholder: Contoh — import file ekspor pesanan dari Seller Center.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Seberapa penting?
+      options:
+        - Tinggi — menghambat operasional
+        - Sedang — menghemat banyak waktu
+        - Rendah — enak kalau ada
+    validations:
+      required: true

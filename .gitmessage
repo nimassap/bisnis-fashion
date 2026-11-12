@@ -1,0 +1,28 @@
+
+# <tipe>(<scope>): <ringkasan singkat, kalimat perintah, maks. 72 karakter>
+#
+# Kenapa perubahan ini perlu, dan apa yang berubah dari sisi pemakai.
+# Satu poin per perubahan penting:
+# - ...
+#
+# Tipe:
+#   feat      fitur baru
+#   fix       perbaikan bug
+#   refactor  ubah struktur kode tanpa ubah perilaku
+#   test      tambah atau perbaiki tes
+#   docs      dokumentasi
+#   style     format kode (pint), tanpa ubah logika
+#   perf      percepat sesuatu
+#   build     dependensi, build, aset (composer, npm, vite)
+#   chore     pekerjaan rutin lain (config, seeder, data contoh)
+#
+# Scope (modul):
+#   brand, koleksi, fase, produk, kain, vendor, harga, kas, budget,
+#   pembayaran, penjualan, stok, promosi, dashboard, pengaturan, auth,
+#   pwa, ui, db
+#
+# Contoh:
+#   feat(penjualan): catat pesanan paket couple
+#   fix(kas): selisih negatif tampil dengan dua tanda minus
+#
+# Baris yang diawali # tidak ikut tersimpan.
