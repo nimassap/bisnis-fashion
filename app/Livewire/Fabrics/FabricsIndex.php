@@ -9,6 +9,7 @@ use App\Enums\VendorType;
 use App\Livewire\Concerns\SendsToasts;
 use App\Models\Fabric;
 use App\Rules\MoneyAmount;
+use App\Support\Decimal;
 use App\Support\MediaStore;
 use App\Support\Money;
 use Illuminate\Http\UploadedFile;
@@ -85,10 +86,10 @@ final class FabricsIndex extends Component
         $this->vendorId = (string) $fabric->vendor_id;
         $this->composition = (string) $fabric->composition;
         $this->gsm = (string) $fabric->gsm;
-        $this->widthCm = (string) $fabric->width_cm;
+        $this->widthCm = Decimal::display($fabric->width_cm);
         $this->pricePerMeter = $fabric->price_per_meter === null ? '' : Money::grouped($fabric->price_per_meter);
         $this->colors = (string) $fabric->colors;
-        $this->shrinkagePercent = $fabric->shrinkage_percent === null ? '' : str_replace('.', ',', rtrim(rtrim((string) $fabric->shrinkage_percent, '0'), '.'));
+        $this->shrinkagePercent = Decimal::display($fabric->shrinkage_percent);
         $this->colorfast = $fabric->colorfast === null ? '' : ($fabric->colorfast ? '1' : '0');
         $this->comfortRating = (string) $fabric->comfort_rating;
         $this->status = $fabric->status->value;
@@ -107,14 +108,15 @@ final class FabricsIndex extends Component
         $business = auth()->user()->business;
 
         // Indonesian writes 2,5 for two and a half.
-        $this->shrinkagePercent = str_replace(',', '.', trim($this->shrinkagePercent));
+        $this->shrinkagePercent = Decimal::normalize($this->shrinkagePercent);
+        $this->widthCm = Decimal::normalize($this->widthCm);
 
         $this->validate([
             'name' => ['required', 'string', 'max:120'],
             'vendorId' => ['nullable', Rule::exists('vendors', 'id')->where('business_id', $business->id)],
             'composition' => ['nullable', 'string', 'max:120'],
             'gsm' => ['nullable', 'integer', 'min:1', 'max:2000'],
-            'widthCm' => ['nullable', 'integer', 'min:1', 'max:1000'],
+            'widthCm' => ['nullable', 'numeric', 'min:1', 'max:1000', 'decimal:0,1'],
             'pricePerMeter' => ['nullable', new MoneyAmount(min: '0')],
             'colors' => ['nullable', 'string', 'max:255'],
             'shrinkagePercent' => ['nullable', 'numeric', 'min:0', 'max:100'],

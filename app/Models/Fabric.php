@@ -27,7 +27,7 @@ final class Fabric extends Model
         return [
             'status' => FabricStatus::class,
             'gsm' => 'integer',
-            'width_cm' => 'integer',
+            'width_cm' => 'decimal:1',
             'price_per_meter' => 'decimal:2',
             'shrinkage_percent' => 'decimal:1',
             'colorfast' => 'boolean',

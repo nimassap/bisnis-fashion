@@ -156,6 +156,37 @@ final class FabricsAndVendorsTest extends TestCase
         $this->get('/fabrics')->assertSee('Linen Rami')->assertSee('Toko Kain Sejahtera')->assertSee('Susut 2,5%');
     }
 
+    public function test_fabric_width_accepts_a_comma_decimal(): void
+    {
+        Livewire::test(FabricsIndex::class)
+            ->call('openCreate')
+            ->set('name', 'Wolfis')
+            ->set('widthCm', '36,5')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $fabric = $this->business->fabrics()->sole();
+        $this->assertSame('36.5', $fabric->width_cm);
+
+        // Shown and edited back the Indonesian way.
+        $this->get('/fabrics')->assertSee('36,5 cm');
+        Livewire::test(FabricsIndex::class)
+            ->call('openEdit', $fabric->id)
+            ->assertSet('widthCm', '36,5');
+    }
+
+    public function test_fabric_width_rejects_nonsense(): void
+    {
+        foreach (['lebar', '0', '36,55'] as $typed) {
+            Livewire::test(FabricsIndex::class)
+                ->call('openCreate')
+                ->set('name', 'Kain')
+                ->set('widthCm', $typed)
+                ->call('save')
+                ->assertHasErrors('widthCm');
+        }
+    }
+
     public function test_replacing_a_swatch_removes_the_old_file(): void
     {
         $fabric = Fabric::factory()->for($this->business)->create();

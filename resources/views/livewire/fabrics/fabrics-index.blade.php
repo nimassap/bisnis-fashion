@@ -1,5 +1,6 @@
 @php
     use App\Enums\FabricStatus;
+    use App\Support\Decimal;
     use App\Support\MediaStore;
 
     $filterOptions = ['' => __('common.all')] + FabricStatus::options();
@@ -61,13 +62,13 @@
                             </div>
                             <div>
                                 <dt class="text-xs text-muted-foreground">{{ __('fabrics.width_short') }}</dt>
-                                <dd class="numeric">{{ $fabric->width_cm ? $fabric->width_cm.' cm' : '–' }}</dd>
+                                <dd class="numeric">{{ $fabric->width_cm !== null ? Decimal::display($fabric->width_cm).' cm' : '–' }}</dd>
                             </div>
                         </dl>
 
                         <div class="flex flex-wrap gap-1.5">
                             @if ($fabric->shrinkage_percent !== null)
-                                <x-status-badge :tone="(float) $fabric->shrinkage_percent > 3 ? 'warning' : 'success'" :label="__('fabrics.shrinkage_badge', ['value' => str_replace('.', ',', rtrim(rtrim((string) $fabric->shrinkage_percent, '0'), '.'))])" />
+                                <x-status-badge :tone="(float) $fabric->shrinkage_percent > 3 ? 'warning' : 'success'" :label="__('fabrics.shrinkage_badge', ['value' => Decimal::display($fabric->shrinkage_percent)])" />
                             @endif
                             @if ($fabric->colorfast !== null)
                                 <x-status-badge :tone="$fabric->colorfast ? 'success' : 'danger'" :label="$fabric->colorfast ? __('fabrics.colorfast_yes') : __('fabrics.colorfast_no')" />
@@ -131,7 +132,7 @@
                     <input type="number" id="gsm" wire:model="gsm" min="1" class="input numeric" inputmode="numeric" />
                 </x-field>
                 <x-field :label="__('fabrics.width_cm')" for="widthCm" :error="$errors->first('widthCm')">
-                    <input type="number" id="widthCm" wire:model="widthCm" min="1" class="input numeric" inputmode="numeric" />
+                    <input type="text" id="widthCm" wire:model="widthCm" class="input numeric @error('widthCm') input-invalid @enderror" inputmode="decimal" placeholder="150" />
                 </x-field>
             </div>
 
