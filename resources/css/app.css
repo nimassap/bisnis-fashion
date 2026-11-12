@@ -1,0 +1,587 @@
+@import 'tailwindcss';
+
+/*
+| Typeface
+|
+| Plus Jakarta Sans, checked into the repository at resources/fonts and pulled
+| through the bundler like any other asset. It is one variable file per subset
+| covering every weight from 200 to 800, so the whole family costs 27 KB.
+|
+| It is vendored rather than fetched from a font service on purpose: nothing
+| here reaches the network, at build time or in the browser. The application
+| works offline, no third party is told who is reading the page, and a build
+| cannot break because someone else's CDN is having a bad day.
+*/
+@font-face {
+    font-family: 'Plus Jakarta Sans';
+    font-style: normal;
+    font-weight: 200 800;
+    font-display: swap;
+    src: url('../fonts/plus-jakarta-sans-latin.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+        U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+        U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'Plus Jakarta Sans';
+    font-style: normal;
+    font-weight: 200 800;
+    font-display: swap;
+    src: url('../fonts/plus-jakarta-sans-latin-ext.woff2') format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+        U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0,
+        U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../views/**/*.blade.php';
+@source '../../app/**/*.php';
+
+/*
+| Tone safelist
+|
+| Components take a tone by name — `<x-progress-bar tone="warning">` becomes
+| `bg-{{ $tone }}` — and a class assembled at render time is invisible to the
+| scanner, which reads source files as text. Listing the six tones here is what
+| makes a status colour chosen in PHP actually paint.
+*/
+@source inline("{bg,text,border}-{primary,accent,success,warning,danger,info}");
+@source inline("bg-{primary,accent,success,warning,danger,info}-soft");
+@source inline("bg-{primary,accent,success,warning,danger,info}/25");
+@source inline("text-{primary,accent,success,warning,danger,info}-foreground");
+@source inline("badge-{neutral,primary,success,warning,danger,info}");
+@source inline("text-{foreground,muted-foreground}");
+
+/*
+| Design tokens
+|
+| Every colour below is a default. The server writes a <style> block into the
+| <head> that redefines the same custom properties from the signed-in user's
+| theme, which is what makes the whole interface — including charts, badges
+| and the bottom navigation — follow a custom palette without any component
+| knowing a colour value.
+*/
+@theme {
+    --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+    --color-background: #eef1f8;
+    --color-foreground: #0f172a;
+    --color-card: #ffffff;
+    --color-card-foreground: #0f172a;
+    --color-sidebar: #ffffff;
+    --color-sidebar-foreground: #0f172a;
+    --color-border: #e2e8f0;
+    --color-input: #e2e8f0;
+
+    --color-primary: #2563eb;
+    --color-primary-foreground: #ffffff;
+    --color-primary-soft: #e5edfc;
+    --color-primary-hover: #1e50cd;
+
+    --color-accent: #0284c7;
+    --color-accent-foreground: #ffffff;
+    --color-accent-soft: #e0f0fa;
+
+    --color-secondary: #f1f4f8;
+    --color-secondary-foreground: #0f172a;
+    --color-muted: #f7f9fb;
+    --color-muted-foreground: #64748b;
+
+    /* Raised tiles inside a card, and the one high-contrast feature panel. */
+    --color-surface: #f4f6fa;
+    --color-surface-strong: #e9edf4;
+    --color-spotlight: #131c31;
+    --color-spotlight-foreground: #f5f7fb;
+    --color-spotlight-muted: #97a3bd;
+    --color-hairline: #eef1f6;
+
+    --color-ring: #2563eb;
+    --color-overlay: #0f172a;
+
+    /*
+    | Dora's mark, the ring her launcher wears, and the chip every badge sits
+    | her mark on. None of these three are derived from the user's chosen
+    | palette: she stays the same indigo-into-blue in every preset, and only
+    | steps lighter — mark and chip alike — for dark surfaces. Without the
+    | chip carrying its own fixed colour too, it kept mixing in whatever
+    | preset was active — a green circle around her fixed indigo star in
+    | Emerald, a red one in Rose — so the one part of her that was supposed
+    | to stay put stayed put inside a background that didn't.
+    |
+    | ThemePalette overrides all three per scheme; these are the light values
+    | it starts from.
+    */
+    --color-assistant-mark: #4f46e5;
+    --color-assistant-mark-end: #2563eb;
+    --color-assistant-badge: #eef2ff;
+
+    --color-success: #1f7a5a;
+    --color-success-foreground: #ffffff;
+    --color-success-soft: #e8f2ee;
+    --color-warning: #a16207;
+    --color-warning-foreground: #ffffff;
+    --color-warning-soft: #f5efe2;
+    --color-danger: #b0413e;
+    --color-danger-foreground: #ffffff;
+    --color-danger-soft: #f7eceb;
+    --color-info: #2a6f97;
+    --color-info-foreground: #ffffff;
+    --color-info-soft: #e9f0f5;
+
+    --radius-card: 1.25rem;
+    --radius-panel: 1.5rem;
+}
+
+/*
+| Depth
+|
+| Defaults only. ThemePalette::effects() rewrites all five from the user's
+| palette, swapping cast shadows for lit top edges when the surface is dark —
+| a drop shadow is invisible against near-black.
+*/
+:root {
+    --shadow-card: 0 1px 2px 0 rgb(30 41 59 / 0.05), 0 12px 28px -16px rgb(30 41 59 / 0.18);
+    --shadow-lift: 0 2px 4px 0 rgb(30 41 59 / 0.05), 0 28px 56px -24px rgb(30 41 59 / 0.28);
+    --shadow-glow: 0 0 0 1px rgb(37 99 235 / 0.18), 0 20px 45px -22px rgb(37 99 235 / 0.5);
+    --veil: linear-gradient(160deg, rgb(255 255 255 / 0.9) 0%, rgb(255 255 255 / 0) 45%);
+    --veil-strong: linear-gradient(150deg, rgb(255 255 255 / 1) 0%, rgb(255 255 255 / 0) 55%);
+}
+
+/*
+| Base
+*/
+@layer base {
+    html {
+        -webkit-text-size-adjust: 100%;
+        scroll-behavior: smooth;
+    }
+
+    body {
+        background-color: var(--color-background);
+        color: var(--color-foreground);
+        font-family: var(--font-sans);
+        /* Nothing should ever scroll sideways on a phone. */
+        overflow-x: hidden;
+    }
+
+    *,
+    *::before,
+    *::after {
+        border-color: var(--color-border);
+    }
+
+    /* One consistent focus ring everywhere, visible on any palette. */
+    :focus-visible {
+        outline: 2px solid var(--color-ring);
+        outline-offset: 2px;
+    }
+
+    /* Alpine keeps markup hidden until it has taken control of it. */
+    [x-cloak] {
+        display: none !important;
+    }
+
+    ::selection {
+        background-color: var(--color-primary);
+        color: var(--color-primary-foreground);
+    }
+
+    /*
+    | Safari draws its own disclosure triangle on a <summary> from
+    | ::-webkit-details-marker, a pseudo-element `list-style: none` (the
+    | Tailwind `list-none` utility already puts on every <summary> in this
+    | app) does not reach — Chrome and Firefox honour that property here,
+    | Safari does not. Left alone, a <summary> that also draws its own
+    | chevron icon shows two arrows on an iPhone and one everywhere else.
+    */
+    summary::-webkit-details-marker {
+        display: none;
+    }
+
+    /*
+    | A <legend> is painted on its fieldset's border line by default, which
+    | leaves it sitting on the edge of a padded card rather than inside it.
+    | Floating it full-width takes it out of that special layout and lets it
+    | flow like the heading it actually is.
+    |
+    | Whatever follows then has to clear the float explicitly: a grid or flex
+    | container will not wrap around one, and without this it lands alongside
+    | the legend in whatever sliver of width is left.
+    */
+    legend {
+        float: left;
+        width: 100%;
+    }
+
+    legend + * {
+        clear: both;
+    }
+
+    /*
+    | Native date and time controls.
+    |
+    | Safari on iOS lays these out from their own content rather than from the
+    | box they were given: a full-width field still renders a narrow control,
+    | it pushes past a padded card when the value is long, and it breaks that
+    | value over two lines — "30 Agu" above "2026". Letting the box shrink and
+    | holding the value to a single left-aligned line makes them sit in a form
+    | like every other field.
+    */
+    input[type='date'],
+    input[type='month'],
+    input[type='time'],
+    input[type='datetime-local'] {
+        -webkit-appearance: none;
+        appearance: none;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    ::-webkit-date-and-time-value {
+        text-align: left;
+        white-space: nowrap;
+        /* The value is a block of its own; with no line box an empty field
+           collapses to nothing and the row jumps as soon as a date is set. */
+        min-height: 1.5em;
+        margin: 0;
+    }
+
+    ::-webkit-datetime-edit {
+        display: flex;
+        padding: 0;
+    }
+
+    /* Respect a stated preference for less motion. */
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
+    }
+}
+
+/*
+| Components
+|
+| Small, named building blocks declared as utilities so they compose with each
+| other and with variants. They keep the markup readable and stop the same
+| twelve utility classes being copied into thirty templates.
+*/
+
+@utility card {
+    @apply rounded-[var(--radius-card)] border border-hairline bg-card text-card-foreground;
+    box-shadow: var(--shadow-card);
+}
+
+@utility card-padded {
+    @apply card p-4 sm:p-5;
+}
+
+/*
+| A panel is a card that wants to be looked at: wider corners, deeper shadow,
+| and a light veil raked across the top-left so the surface catches the light
+| instead of sitting flat.
+*/
+@utility panel {
+    @apply relative isolate overflow-hidden rounded-[var(--radius-panel)] border border-hairline
+           bg-card text-card-foreground;
+    box-shadow: var(--shadow-lift);
+
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        background: var(--veil);
+        pointer-events: none;
+    }
+}
+
+@utility panel-padded {
+    @apply panel p-5 sm:p-6;
+}
+
+/* The one deliberately high-contrast panel on a page. */
+@utility spotlight {
+    @apply relative isolate overflow-hidden rounded-[var(--radius-panel)] bg-spotlight text-spotlight-foreground;
+    box-shadow: var(--shadow-lift);
+
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        background: var(--veil-strong);
+        opacity: 0.14;
+        pointer-events: none;
+    }
+}
+
+/* A raised tile that sits inside a card — the building block of a metric card. */
+@utility tile {
+    @apply rounded-xl border border-hairline bg-surface;
+}
+
+/* The circular icon badge that heads every metric card. */
+@utility icon-badge {
+    @apply inline-flex size-9 shrink-0 items-center justify-center rounded-full;
+}
+
+/*
+| The chip behind Dora's mark, wherever she appears on her own — the header
+| of a chat, a message bubble, the empty-state greeting. Deliberately its own
+| utility rather than bg-primary-soft: that one is mixed from whichever
+| preset is active, and her mark stopped being one of those the day it got
+| its own fixed colour. A badge that only ever holds her mark has to follow.
+|
+| Not used on a badge that sometimes holds something else instead — the
+| escalated-report header swaps her mark for a shield, and that one badge
+| stays on bg-primary-soft so the shield still reads in the app's own colour.
+*/
+@utility bg-assistant-soft {
+    background-color: var(--color-assistant-badge);
+}
+
+@utility card-title {
+    @apply text-sm font-semibold text-card-foreground;
+}
+
+@utility card-hint {
+    @apply text-xs text-muted-foreground;
+}
+
+@utility label {
+    @apply mb-1.5 block text-sm font-medium text-foreground;
+}
+
+@utility hint {
+    @apply mt-1.5 text-xs text-muted-foreground;
+}
+
+@utility error-text {
+    @apply mt-1.5 flex items-start gap-1.5 text-xs font-medium text-danger;
+}
+
+@utility input {
+    @apply block w-full rounded-xl border border-input bg-card px-3.5 py-2.5 text-base text-foreground
+           placeholder:text-muted-foreground/70
+           focus:border-ring focus:ring-2 focus:ring-ring/25 focus:outline-none
+           disabled:cursor-not-allowed disabled:opacity-60
+           sm:text-sm;
+}
+
+@utility input-invalid {
+    @apply border-danger focus:border-danger focus:ring-danger/25;
+}
+
+@utility select {
+    @apply input appearance-none bg-no-repeat pr-10;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%2364748b' stroke-width='1.5'%3E%3Cpath d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
+    background-position: right 0.75rem center;
+    background-size: 1.25rem;
+}
+
+@utility checkbox {
+    @apply size-5 shrink-0 rounded-md border-input text-primary
+           focus:ring-2 focus:ring-ring/30 focus:ring-offset-0;
+}
+
+/* Buttons — 44px tall on touch screens, which is the comfortable minimum. */
+@utility btn {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2.5
+           text-sm font-semibold whitespace-nowrap transition
+           disabled:pointer-events-none disabled:opacity-55;
+}
+
+@utility btn-primary {
+    @apply btn bg-primary text-primary-foreground hover:bg-primary-hover;
+    box-shadow: var(--shadow-glow);
+}
+
+/* The one call to action on a page, wearing both theme colours. */
+@utility btn-gradient {
+    @apply btn text-primary-foreground transition;
+    background-image: linear-gradient(140deg, var(--color-primary) 0%, var(--color-accent) 100%);
+    box-shadow: var(--shadow-glow);
+
+    &:hover {
+        filter: brightness(1.07);
+    }
+}
+
+@utility btn-secondary {
+    @apply btn border border-hairline bg-card text-foreground hover:bg-secondary;
+    box-shadow: var(--shadow-card);
+}
+
+@utility btn-ghost {
+    @apply btn text-muted-foreground hover:bg-secondary hover:text-foreground;
+}
+
+@utility btn-danger {
+    @apply btn bg-danger text-danger-foreground hover:opacity-90;
+}
+
+@utility btn-sm {
+    @apply min-h-9 gap-1.5 rounded-lg px-3 py-1.5 text-xs;
+}
+
+@utility btn-icon {
+    @apply inline-flex size-11 items-center justify-center rounded-xl text-muted-foreground
+           transition hover:bg-secondary hover:text-foreground;
+}
+
+/* Badges always pair their colour with words. */
+@utility badge {
+    @apply inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs
+           font-medium whitespace-nowrap;
+}
+
+@utility badge-neutral {
+    @apply badge bg-secondary text-secondary-foreground;
+}
+
+@utility badge-primary {
+    @apply badge bg-primary-soft text-primary;
+}
+
+@utility badge-success {
+    @apply badge bg-success-soft text-success;
+}
+
+@utility badge-warning {
+    @apply badge bg-warning-soft text-warning;
+}
+
+@utility badge-danger {
+    @apply badge bg-danger-soft text-danger;
+}
+
+@utility badge-info {
+    @apply badge bg-info-soft text-info;
+}
+
+/* Wide content scrolls inside its own box rather than pushing the page wide. */
+@utility table-scroll {
+    @apply -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0;
+}
+
+/*
+| Navigation items.
+|
+| The resting colours are scoped with `:not(.nav-link-active)` rather than
+| written flat. Tailwind puts every `@utility` in the same cascade layer and
+| decides ties by the order it emits them in — which is not the order they are
+| written here, and not the order they appear in a class attribute. Excluding
+| the active item from the base rule means the two can never contradict each
+| other in the first place.
+*/
+@utility nav-link {
+    @apply relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition;
+
+    &:not(.nav-link-active) {
+        @apply text-muted-foreground hover:bg-secondary hover:text-foreground;
+    }
+}
+
+/*
+| The active item is the page you are on, so it is stated twice: filled, and
+| marked with a rail down its left edge. Colour alone would leave it to whoever
+| can distinguish these two greys.
+*/
+@utility nav-link-active {
+    @apply bg-primary text-primary-foreground;
+    box-shadow: var(--shadow-glow);
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: -0.75rem;
+        height: 1.25rem;
+        width: 3px;
+        translate: 0 -50%;
+        border-radius: 9999px;
+        background: var(--color-primary);
+    }
+}
+
+/* Initials, ringed so the avatar reads as a person and not another button. */
+@utility avatar {
+    @apply inline-flex shrink-0 items-center justify-center rounded-full bg-primary
+           font-semibold text-primary-foreground uppercase;
+}
+
+@utility tab {
+    @apply inline-flex min-h-10 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium
+           whitespace-nowrap transition;
+
+    &:not(.tab-active) {
+        @apply text-muted-foreground hover:text-foreground;
+    }
+}
+
+@utility tab-active {
+    @apply bg-card text-foreground;
+    box-shadow: var(--shadow-card);
+}
+
+@utility skeleton {
+    @apply animate-pulse rounded-lg bg-secondary;
+}
+
+/* Numbers line up when they share a column. */
+@utility numeric {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Room for the bottom navigation and the home indicator on phones. */
+@utility pb-safe {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
+}
+
+@utility pb-nav {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5.5rem);
+}
+
+@utility scrollbar-none {
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+/*
+| Multi-element patterns, which need a descendant selector and so cannot be
+| expressed as a single utility.
+*/
+@layer components {
+    .data-table {
+        @apply w-full border-collapse text-sm;
+    }
+
+    .data-table th {
+        @apply px-3 py-2.5 text-left text-xs font-semibold tracking-wide text-muted-foreground uppercase;
+    }
+
+    .data-table td {
+        @apply border-t border-hairline px-3 py-3 align-middle;
+    }
+
+    .divide-rows > * + * {
+        @apply border-t border-hairline;
+    }
+
+    /* Laravel's paginator markup, restyled to match the app's controls. */
+    .pagination-nav {
+        @apply flex items-center justify-between gap-2 text-sm;
+    }
+}
+

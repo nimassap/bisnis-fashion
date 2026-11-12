@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+>
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Feature">
+            <directory>tests/Feature</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>app</directory>
+        </include>
+    </source>
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <env name="APP_MAINTENANCE_DRIVER" value="file"/>
+        <env name="BCRYPT_ROUNDS" value="4"/>
+        <env name="BROADCAST_CONNECTION" value="null"/>
+        <env name="CACHE_STORE" value="array"/>
+
+        <!--
+            Tests run against MySQL rather than an in-memory SQLite database:
+            the money columns are DECIMAL and several reports use date
+            functions, so exercising the real engine is what makes the suite
+            trustworthy.
+        -->
+        <env name="DB_CONNECTION" value="mysql"/>
+        <env name="DB_HOST" value="127.0.0.1"/>
+        <env name="DB_PORT" value="3306"/>
+        <env name="DB_DATABASE" value="bisnis_fashion_test"/>
+        <env name="DB_USERNAME" value="root"/>
+        <env name="DB_PASSWORD" value=""/>
+        <env name="DB_URL" value=""/>
+
+        <!--
+            No AI provider, unless a test says otherwise.
+
+            Every AI key is emptied here rather than left to whatever the
+            developer happens to have in their own .env. A suite that reads
+            those keys is a suite that passes on one machine and hangs on the
+            next: the tests that check what happens with no provider
+            configured would instead reach for a real one, over the network,
+            with a 60-second timeout each. Tests that do want a provider build
+            one with config()->set(), and are unaffected by these.
+        -->
+        <env name="ANTHROPIC_API_KEY" value=""/>
+        <env name="AI_OPENAI_API_KEY" value=""/>
+        <env name="AI_HELPDESK_ANTHROPIC_API_KEY" value=""/>
+        <env name="AI_HELPDESK_OPENAI_API_KEY" value=""/>
+
+        <!--
+            Same reasoning as the keys above: the streaming tests assert
+            against config/ai.php's own documented default (streaming on),
+            not against whatever a developer has toggled in their own .env
+            for their own local convenience. Left to that, the whole
+            AssistantProviderTest streaming block passes or fails depending on
+            a setting the tests never touch.
+        -->
+        <env name="AI_STREAM" value="true"/>
+
+        <!--
+            The admin panel's second factor is off for the suite as a whole:
+            the admin tests are about the admin pages. TwoFactorTest turns it
+            back on with config()->set() and tests it on its own.
+        -->
+        <env name="ADMIN_TWO_FACTOR_REQUIRED" value="false"/>
+
+        <!-- Never report test errors to a real Sentry project. -->
+        <env name="SENTRY_LARAVEL_DSN" value=""/>
+
+        <env name="MAIL_MAILER" value="array"/>
+        <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="SESSION_DRIVER" value="database"/>
+        <env name="APP_LOCALE" value="id"/>
+        <env name="APP_FALLBACK_LOCALE" value="en"/>
+    </php>
+</phpunit>
