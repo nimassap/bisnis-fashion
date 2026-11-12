@@ -1,0 +1,66 @@
+name: Laporan bug
+description: Ada yang tidak berjalan sebagaimana mestinya.
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: Apa yang terjadi?
+      description: Jelaskan singkat apa yang salah.
+      placeholder: Contoh — saldo kas tampil minus padahal belum ada pengeluaran.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Langkah untuk mengulang
+      description: Urutan klik atau isian sampai bug muncul.
+      placeholder: |
+        1. Buka Buku Kas
+        2. Klik "Uang masuk"
+        3. Isi nominal 100.000 lalu simpan
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Seharusnya bagaimana?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: module
+    attributes:
+      label: Modul
+      options:
+        - Dashboard
+        - Fondasi Brand / Fase
+        - Koleksi
+        - Produk / Size chart / Sampel
+        - Kain
+        - Vendor
+        - HPP & Harga
+        - Buku Kas / Budget
+        - Pembayaran Vendor
+        - Penjualan / Stok
+        - Promosi
+        - Pengaturan / Login
+        - PWA / Tampilan di HP
+        - Lainnya
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Perangkat dan browser
+      placeholder: Contoh — Android, Chrome; atau laptop Windows, Edge
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot
+      description: Tempel atau seret gambar ke sini kalau ada.
