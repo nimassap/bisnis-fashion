@@ -17,6 +17,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'setup.complete' => EnsureSetupIsComplete::class,
         ]);
 
+        // Behind a tunnel or reverse proxy the request reaches PHP as plain
+        // HTTP; trusting the proxy's X-Forwarded-* headers is what makes
+        // generated links (CSS, JS, Livewire) https again. Only the proxies
+        // listed are trusted: a local tunnel by default.
+        $middleware->trustProxies(at: array_map('trim', explode(',', (string) env('TRUSTED_PROXIES', '127.0.0.1,::1'))));
+
         $middleware->redirectGuestsTo(fn () => route('login'));
         $middleware->redirectUsersTo(fn () => route('dashboard'));
     })
