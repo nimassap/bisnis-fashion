@@ -4,6 +4,13 @@
 @endphp
 
 <div class="space-y-6">
+    @if ($previous)
+        <section class="panel-padded space-y-1.5 border-l-4 border-l-primary">
+            <p class="flex items-center gap-1.5 text-sm font-semibold"><x-icon name="sparkles" class="size-4 text-primary" />{{ __('steps.launch.previous', ['name' => $previous->label()]) }}</p>
+            <p class="text-sm whitespace-pre-line text-muted-foreground">{{ $previous->evaluation }}</p>
+        </section>
+    @endif
+
     {{-- Theme and moodboard --}}
     <section class="panel-padded space-y-4">
         <div>

@@ -16,7 +16,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * One production run: one couple set, a women's and a men's model made and
  * launched together. Runs through the design-to-launch phases on its own.
  */
-#[Fillable(['number', 'name', 'theme', 'theme_notes', 'maker_vendor_id', 'target_launch_on', 'bundle_price', 'bundle_strike_price', 'promo_cost_per_piece', 'available_capital', 'notes'])]
+#[Fillable([
+    'number', 'name', 'theme', 'theme_notes', 'maker_vendor_id', 'target_launch_on', 'bundle_price', 'bundle_strike_price',
+    'promo_cost_per_piece', 'available_capital', 'notes',
+    'production_started_on', 'production_due_on', 'materials_sent_on', 'cutting_done_on', 'sewing_done_on', 'finishing_done_on', 'qc_done_on', 'received_on', 'launched_on',
+    'shipping_courier', 'shipping_tracking', 'shot_list', 'launch_concept', 'launch_promo', 'evaluation',
+])]
 final class Collection extends Model
 {
     /** @use HasFactory<CollectionFactory> */
@@ -31,6 +36,15 @@ final class Collection extends Model
             'bundle_strike_price' => 'decimal:2',
             'promo_cost_per_piece' => 'decimal:2',
             'available_capital' => 'decimal:2',
+            'production_started_on' => 'immutable_date',
+            'production_due_on' => 'immutable_date',
+            'materials_sent_on' => 'immutable_date',
+            'cutting_done_on' => 'immutable_date',
+            'sewing_done_on' => 'immutable_date',
+            'finishing_done_on' => 'immutable_date',
+            'qc_done_on' => 'immutable_date',
+            'received_on' => 'immutable_date',
+            'launched_on' => 'immutable_date',
         ];
     }
 
@@ -121,6 +135,30 @@ final class Collection extends Model
     /**
      * The maker's offer that was chosen, if any.
      */
+    /**
+     * @return HasMany<Listing, $this>
+     */
+    public function listings(): HasMany
+    {
+        return $this->hasMany(Listing::class);
+    }
+
+    /**
+     * @return HasMany<ContentPost, $this>
+     */
+    public function contentPosts(): HasMany
+    {
+        return $this->hasMany(ContentPost::class);
+    }
+
+    /**
+     * @return HasMany<Campaign, $this>
+     */
+    public function campaigns(): HasMany
+    {
+        return $this->hasMany(Campaign::class);
+    }
+
     public function chosenMakerQuote(): ?MakerQuote
     {
         return $this->maker_vendor_id === null

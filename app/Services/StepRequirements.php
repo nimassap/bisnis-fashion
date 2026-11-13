@@ -57,6 +57,8 @@ final class StepRequirements
             'trims' => self::trims($collection),
             'sampling' => self::sampling($collection),
             'costing' => self::costing($collection),
+            'production' => self::production($collection),
+            'prelaunch' => self::prelaunch($collection),
             'launch' => self::launch($collection),
             default => [],
         };
@@ -176,6 +178,28 @@ final class StepRequirements
         ];
     }
 
+    private static function production(Collection $collection): array
+    {
+        $products = $collection->products()->with('variants')->get();
+        $both = $products->count() === 2;
+
+        return [
+            ['purchase_order', $both && $products->every(fn (Product $p) => $p->variants->sum('planned_quantity') > 0)],
+            ['production_done', $collection->cutting_done_on !== null && $collection->sewing_done_on !== null && $collection->finishing_done_on !== null],
+            ['qc_recorded', $collection->qc_done_on !== null && $products->contains(fn (Product $p) => $p->variants->sum('produced_quantity') > 0)],
+            ['goods_received', $collection->received_on !== null],
+        ];
+    }
+
+    private static function prelaunch(Collection $collection): array
+    {
+        return [
+            ['product_photos', $collection->media()->where('kind', 'product_photo')->exists()],
+            ['listings', $collection->listings()->where('is_live', true)->exists()],
+            ['launch_concept', $collection->launch_concept !== null && $collection->target_launch_on !== null],
+        ];
+    }
+
     private static function launch(Collection $collection): array
     {
         $sold = $collection->products()
@@ -183,7 +207,9 @@ final class StepRequirements
             ->exists();
 
         return [
+            ['launched_on', $collection->launched_on !== null],
             ['first_order', $sold],
+            ['evaluation', $collection->evaluation !== null],
         ];
     }
 }

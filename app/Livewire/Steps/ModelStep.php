@@ -169,6 +169,10 @@ final class ModelStep extends StepComponent
             'collection' => $collection,
             'moodboardImages' => $collection->media->where('kind', 'moodboard'),
             'products' => $collection->products,
+            // What the last collection taught, carried into this one.
+            'previous' => $this->business()->collections()
+                ->where('number', '<', $collection->number)->whereNotNull('evaluation')
+                ->orderByDesc('number')->first(),
         ]);
     }
 
