@@ -223,6 +223,37 @@ final class FabricsAndVendorsTest extends TestCase
         $this->assertNull($product->fresh()->fabric_id);
     }
 
+    public function test_owner_adds_a_supplier_from_the_fabric_form(): void
+    {
+        Livewire::test(FabricsIndex::class)
+            ->call('openCreate')
+            ->set('name', 'Wolfis')
+            ->call('openSupplierForm')
+            ->set('newSupplierName', 'GLOSIRGAMISBANDUNG98')
+            ->set('newSupplierLocation', 'Bandung')
+            ->call('createSupplier')
+            ->assertHasNoErrors()
+            ->assertSet('showSupplierForm', false)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $supplier = $this->business->vendors()->sole();
+        $this->assertSame(VendorType::Fabric, $supplier->type);
+        $this->assertSame('Bandung', $supplier->location);
+        $this->assertSame($supplier->id, $this->business->fabrics()->sole()->vendor_id);
+    }
+
+    public function test_new_supplier_needs_a_name(): void
+    {
+        Livewire::test(FabricsIndex::class)
+            ->call('openCreate')
+            ->call('openSupplierForm')
+            ->call('createSupplier')
+            ->assertHasErrors('newSupplierName');
+
+        $this->assertSame(0, $this->business->vendors()->count());
+    }
+
     public function test_fabric_supplier_must_belong_to_the_business(): void
     {
         $foreign = Vendor::factory()->create(['type' => VendorType::Fabric]);

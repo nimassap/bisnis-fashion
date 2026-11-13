@@ -116,6 +116,37 @@
                         <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
                     @endforeach
                 </select>
+
+                {{--
+                | Inline rather than a second modal: two focus-trapped dialogs
+                | stacked on each other lock the page. Enter here saves the
+                | supplier, not the whole fabric form around it.
+                --}}
+                @if ($showSupplierForm)
+                    <div class="mt-2 space-y-3 rounded-xl border border-primary/30 bg-primary-soft p-3.5">
+                        <p class="text-sm font-semibold text-foreground">{{ __('fabrics.new_supplier') }}</p>
+                        <x-field :label="__('vendors.name')" for="newSupplierName" :error="$errors->first('newSupplierName')" required>
+                            <input type="text" id="newSupplierName" wire:model="newSupplierName" @keydown.enter.prevent="$wire.createSupplier()" class="input @error('newSupplierName') input-invalid @enderror" placeholder="{{ __('fabrics.new_supplier_placeholder') }}" />
+                        </x-field>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <x-field :label="__('vendors.location')" for="newSupplierLocation" :error="$errors->first('newSupplierLocation')">
+                                <input type="text" id="newSupplierLocation" wire:model="newSupplierLocation" @keydown.enter.prevent="$wire.createSupplier()" class="input" />
+                            </x-field>
+                            <x-field :label="__('vendors.phone')" for="newSupplierPhone" :error="$errors->first('newSupplierPhone')">
+                                <input type="tel" id="newSupplierPhone" wire:model="newSupplierPhone" @keydown.enter.prevent="$wire.createSupplier()" class="input" inputmode="tel" />
+                            </x-field>
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" class="btn-ghost btn-sm" wire:click="$set('showSupplierForm', false)">{{ __('common.cancel') }}</button>
+                            <button type="button" class="btn-primary btn-sm" wire:click="createSupplier" wire:loading.attr="disabled" wire:target="createSupplier">{{ __('fabrics.save_supplier') }}</button>
+                        </div>
+                    </div>
+                @else
+                    <button type="button" class="btn-ghost btn-sm mt-1.5 px-2" wire:click="openSupplierForm">
+                        <x-icon name="plus" class="size-4" />
+                        <span>{{ __('fabrics.add_supplier') }}</span>
+                    </button>
+                @endif
             </x-field>
 
             <div class="grid gap-5 sm:grid-cols-2">

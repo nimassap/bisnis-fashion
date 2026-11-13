@@ -165,6 +165,52 @@ final class FabricsIndex extends Component
         $this->toastSuccess(__('fabrics.saved'));
     }
 
+    // ── Quick-add supplier ─────────────────────────────────────────────
+
+    public bool $showSupplierForm = false;
+
+    public string $newSupplierName = '';
+
+    public string $newSupplierLocation = '';
+
+    public string $newSupplierPhone = '';
+
+    public function openSupplierForm(): void
+    {
+        $this->reset('newSupplierName', 'newSupplierLocation', 'newSupplierPhone');
+        $this->resetValidation(['newSupplierName', 'newSupplierLocation', 'newSupplierPhone']);
+        $this->showSupplierForm = true;
+    }
+
+    /**
+     * Adds a fabric supplier to the vendor list without leaving the fabric
+     * form, and picks it. Prices, MOQ and the rest are filled in later on
+     * the Vendor page.
+     */
+    public function createSupplier(): void
+    {
+        $this->validate([
+            'newSupplierName' => ['required', 'string', 'max:120'],
+            'newSupplierLocation' => ['nullable', 'string', 'max:120'],
+            'newSupplierPhone' => ['nullable', 'string', 'max:40'],
+        ], attributes: [
+            'newSupplierName' => __('vendors.name'),
+            'newSupplierLocation' => __('vendors.location'),
+            'newSupplierPhone' => __('vendors.phone'),
+        ]);
+
+        $supplier = auth()->user()->business->vendors()->create([
+            'type' => VendorType::Fabric,
+            'name' => trim($this->newSupplierName),
+            'location' => trim($this->newSupplierLocation) ?: null,
+            'phone' => trim($this->newSupplierPhone) ?: null,
+        ]);
+
+        $this->vendorId = (string) $supplier->id;
+        $this->showSupplierForm = false;
+        $this->toastSuccess(__('fabrics.supplier_added', ['name' => $supplier->name]));
+    }
+
     public function removeSwatch(): void
     {
         if ($this->editingId === null) {
@@ -230,6 +276,7 @@ final class FabricsIndex extends Component
         $this->reset(
             'editingId', 'name', 'vendorId', 'composition', 'gsm', 'widthCm', 'pricePerMeter', 'colors',
             'shrinkagePercent', 'colorfast', 'comfortRating', 'status', 'notes', 'swatch',
+            'showSupplierForm', 'newSupplierName', 'newSupplierLocation', 'newSupplierPhone',
         );
         $this->resetValidation();
     }
