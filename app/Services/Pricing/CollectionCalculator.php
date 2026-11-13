@@ -33,7 +33,7 @@ final class CollectionCalculator
                 'fabric' => $p->fabricCostPerPiece(),
                 'wastePercent' => (string) $p->fabric_waste_percent,
                 'sewing' => $p->sewing_cost,
-                'items' => $p->costItems->map(fn ($i) => (string) $i->amount)->all(),
+                'items' => [...$p->costItems->map(fn ($i) => (string) $i->amount)->all(), $collection->promo_cost_per_piece],
                 'quantity' => $p->planned_quantity,
                 'price' => $p->price,
             ])->values()->all(),

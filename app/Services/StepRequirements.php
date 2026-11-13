@@ -13,6 +13,7 @@ use App\Models\Collection;
 use App\Models\Phase;
 use App\Models\Product;
 use App\Models\TrimQuote;
+use App\Services\Pricing\CollectionCalculator;
 
 /**
  * What a step needs before it can be closed, read from the data the owner
@@ -166,9 +167,12 @@ final class StepRequirements
     {
         $products = $collection->products()->get();
 
+        $capital = CollectionCalculator::for($collection, collect(), '0')->capital();
+
         return [
             ['single_prices', $products->count() === 2 && $products->every(fn (Product $p) => $p->price !== null)],
             ['bundle_price', $collection->bundle_price !== null],
+            ['capital_enough', $collection->available_capital !== null && bccomp((string) $collection->available_capital, $capital, 2) >= 0],
         ];
     }
 

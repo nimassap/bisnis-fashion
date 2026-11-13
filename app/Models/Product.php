@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 #[Fillable([
     'collection_id', 'gender', 'name', 'status', 'colors', 'swatches', 'fit_notes', 'fabric_id', 'fabric_consumption_m',
-    'fabric_waste_percent', 'sewing_cost', 'planned_quantity', 'price',
+    'fabric_waste_percent', 'sewing_cost', 'planned_quantity', 'price', 'strike_price', 'reseller_price',
     'materials', 'construction_notes', 'size_points', 'description',
 ])]
 final class Product extends Model
@@ -37,6 +37,8 @@ final class Product extends Model
             'sewing_cost' => 'decimal:2',
             'planned_quantity' => 'integer',
             'price' => 'decimal:2',
+            'strike_price' => 'decimal:2',
+            'reseller_price' => 'decimal:2',
             'size_points' => 'array',
             'swatches' => 'array',
         ];

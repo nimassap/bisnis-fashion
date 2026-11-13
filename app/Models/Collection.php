@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * One production run: one couple set, a women's and a men's model made and
  * launched together. Runs through the design-to-launch phases on its own.
  */
-#[Fillable(['number', 'name', 'theme', 'theme_notes', 'maker_vendor_id', 'target_launch_on', 'bundle_price', 'notes'])]
+#[Fillable(['number', 'name', 'theme', 'theme_notes', 'maker_vendor_id', 'target_launch_on', 'bundle_price', 'bundle_strike_price', 'promo_cost_per_piece', 'available_capital', 'notes'])]
 final class Collection extends Model
 {
     /** @use HasFactory<CollectionFactory> */
@@ -28,6 +28,9 @@ final class Collection extends Model
             'number' => 'integer',
             'target_launch_on' => 'immutable_date',
             'bundle_price' => 'decimal:2',
+            'bundle_strike_price' => 'decimal:2',
+            'promo_cost_per_piece' => 'decimal:2',
+            'available_capital' => 'decimal:2',
         ];
     }
 

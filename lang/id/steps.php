@@ -137,6 +137,35 @@ return [
         'added' => 'Kain ditambahkan ke library. Pilih untuk model di bawah.',
     ],
 
+    'sampling' => [
+        'empty' => 'Belum ada sampel.',
+        'first' => 'Pesan sampel pertama',
+        'next' => 'Sampel berikutnya',
+        'round' => 'Sampel #:round',
+        'size_badge' => 'Ukuran :size',
+        'golden_round' => 'ACC di sampel #:round',
+        'review' => 'Review',
+        'form_title' => 'Sampel :name',
+        'size' => 'Ukuran sampel',
+        'measurements' => 'Ukur sampel',
+        'measurements_hint' => 'Isi ukuran asli sampel. Selisih lebih dari :tolerance cm dari size chart ditandai untuk revisi.',
+        'spec' => 'Size chart',
+        'actual' => 'Sampel',
+        'diff' => 'Selisih',
+        'review_points' => 'Poin review',
+        'points' => [
+            'fit' => 'Ukuran & fit',
+            'stitching' => 'Jahitan',
+            'color' => 'Warna',
+            'comfort' => 'Kenyamanan',
+        ],
+        'ok' => 'Sesuai',
+        'revise' => 'Revisi',
+        'photo' => 'Foto sampel',
+        'off_points' => 'Perlu revisi ukuran: :points',
+        'all_within' => 'Semua ukuran sesuai size chart.',
+    ],
+
     'trims' => [
         'hint' => 'Bandingkan penawaran supplier, pilih satu, lalu catat pesanannya. Harga per pcs otomatis masuk HPP kedua model.',
         'kinds' => [
