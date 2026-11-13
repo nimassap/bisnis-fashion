@@ -53,7 +53,7 @@
 
                         <dl class="grid grid-cols-3 gap-2 text-sm">
                             <div>
-                                <dt class="text-xs text-muted-foreground">{{ __('fabrics.price_per_meter_short') }}</dt>
+                                <dt class="text-xs text-muted-foreground">{{ __('fabrics.price_short') }}/{{ $fabric->unitLabel() }}</dt>
                                 <dd>@if ($fabric->price_per_meter !== null)<x-amount :value="$fabric->price_per_meter" compact />@else – @endif</dd>
                             </div>
                             <div>
