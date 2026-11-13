@@ -164,6 +164,56 @@ final class ProductShow extends Component
         $this->photo = null;
     }
 
+    // ── Quick-add fabric ───────────────────────────────────────────────
+
+    public bool $showFabricForm = false;
+
+    public string $newFabricName = '';
+
+    public string $newFabricPrice = '';
+
+    public string $newFabricComposition = '';
+
+    public function openFabricForm(): void
+    {
+        $this->reset('newFabricName', 'newFabricPrice', 'newFabricComposition');
+        $this->resetValidation(['newFabricName', 'newFabricPrice', 'newFabricComposition']);
+        $this->showFabricForm = true;
+    }
+
+    public function closeFabricForm(): void
+    {
+        $this->showFabricForm = false;
+    }
+
+    /**
+     * Adds a fabric to the library without leaving the model, and picks it.
+     * The rest of its details (supplier, tests, swatch) are filled in later
+     * on the Kain page.
+     */
+    public function createFabric(): void
+    {
+        $this->validate([
+            'newFabricName' => ['required', 'string', 'max:120'],
+            'newFabricPrice' => ['nullable', new MoneyAmount(min: '0')],
+            'newFabricComposition' => ['nullable', 'string', 'max:120'],
+        ], attributes: [
+            'newFabricName' => __('fabrics.name'),
+            'newFabricPrice' => __('fabrics.price_per_meter'),
+            'newFabricComposition' => __('fabrics.composition'),
+        ]);
+
+        $fabric = auth()->user()->business->fabrics()->create([
+            'name' => trim($this->newFabricName),
+            'price_per_meter' => Money::parse($this->newFabricPrice),
+            'composition' => trim($this->newFabricComposition) ?: null,
+        ]);
+
+        $this->fabricId = (string) $fabric->id;
+        $this->showFabricForm = false;
+        $this->toastSuccess(__('products.fabric_added', ['name' => $fabric->name]));
+    }
+
     // ── Size chart ─────────────────────────────────────────────────────
 
     public function addPoint(): void
