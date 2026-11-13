@@ -23,7 +23,7 @@
 
 Aplikasi web untuk pemilik brand fashion **couple**. Satu **koleksi** adalah satu
 kali produksi berisi sepasang model, yaitu model cewek dan model cowok. Aplikasi
-memandu tiap koleksi melalui fase-fasenya, menghitung HPP dan harga jual,
+memandu tiap koleksi melalui 9 step yang diisi langsung di aplikasi, menghitung HPP dan harga jual,
 mencatat uang masuk dan keluar, lalu memantau penjualan dan promosi setelah
 launching.
 
@@ -33,22 +33,43 @@ ditambahkan nanti tanpa migrasi besar.
 
 ```mermaid
 flowchart LR
-    B["1 · Fondasi Brand<br/><small>sekali per bisnis</small>"] --> D
+    B["Setup Brand<br/><small>sekali per bisnis</small>"] --> S1
     subgraph K["Per koleksi (sepasang model couple)"]
         direction LR
-        D["2 · Desain &amp; Material"] --> S["3 · Sourcing &amp; Sampel"] --> C["4 · Costing &amp; Pricing"] --> P["5 · Produksi &amp; Pre-launch"] --> L["6 · Launch &amp; Operasional"]
+        S1["1 · Model"] --> S2["2 · Konveksi"] --> S3["3 · Kain"] --> S4["4 · Label &amp; kemasan"] --> S5["5 · Sampling"]
+        S5 --> S6["6 · Costing &amp; pricing"] --> S7["7 · Produksi"] --> S8["8 · Pre-launching"] --> S9["9 · Launching"]
     end
 ```
 
-Fase hanya bisa ditutup kalau fase sebelumnya sudah selesai dan semua task
-**gate**-nya dicentang. Task di fase berikutnya tetap bisa dikerjakan lebih awal.
+Setup Brand berisi target pasar, kompetitor, positioning, nama brand, logo,
+label, hangtag, desain kemasan, akun medsos dan toko, modal awal, target
+margin, serta daftar semua konveksi dan kain. Step 2 dan 3 tinggal memilih
+dari daftar itu.
+
+Tiap step punya **syarat** yang dihitung dari data yang sudah diisi, misalnya
+"kedua model punya size chart" atau "modal tersedia cukup". Step hanya bisa
+ditutup kalau step sebelumnya selesai, semua syaratnya terpenuhi, dan task
+**gate**-nya dicentang. Konveksi diasumsikan hanya menjahit (CMT); kain dan
+aksesoris dibeli sendiri.
+
+| Step | Isi |
+|---|---|
+| 1 · Model | Tema, moodboard, foto/sketsa, warna, aksesoris dan detail jahitan, catatan fit, rencana jumlah, pelajaran dari koleksi sebelumnya |
+| 2 · Konveksi | Penawaran tiap konveksi (ongkos jahit cewek/cowok, sampel, DP, MOQ, kapasitas), pilih satu |
+| 3 · Kain | Kain per model, pemakaian, supplier, harga, satuan, minimum order |
+| 4 · Label & kemasan | Riset supplier label, hangtag, kemasan; pilih dan catat pesanan cetak |
+| 5 · Sampling | Ronde sampel, ukur terhadap size chart, poin review, foto, golden sample |
+| 6 · Costing & pricing | HPP, harga satuan, coret, reseller, paket couple, biaya promo, cek modal |
+| 7 · Produksi | PO per ukuran × warna, tahap produksi, QC jadi stok, tagihan DP dan pelunasan otomatis |
+| 8 · Pre-launching | Foto produk, shot list, listing per channel, konsep dan tanggal launching |
+| 9 · Launching | Evaluasi otomatis dari penjualan, ROAS, saran restock, catatan pelajaran |
 
 ## Fitur
 
 | Modul | Isi |
 |---|---|
-| **Fondasi Brand & Fase** | Checklist bawaan per fase, task gate, tenggat dan tanda telat, catatan keputusan beserta alasannya |
-| **Koleksi** | Satu koleksi = satu pasang model couple, nomor otomatis, target launching, langkah fase |
+| **Setup Brand & Step** | Form Setup Brand, 9 step per koleksi dengan syarat otomatis, task tambahan dan gate, tenggat dan tanda telat |
+| **Koleksi** | Satu koleksi = satu pasang model couple, nomor otomatis, target launching, progres 9 step |
 | **Produk** | Tech pack, foto/sketsa, size chart per titik ukur (cewek dan cowok berbeda), riwayat sampel per putaran |
 | **Kain & Vendor** | Library kain dengan hasil tes susut/luntur dan foto swatch; perbandingan penawaran konveksi (harga, MOQ, lead time, rating) dan tombol WhatsApp |
 | **HPP & Harga** | HPP per pcs (kain + kain terbuang + ongkos jahit + biaya lain + overhead), harga satuan dan **paket couple**, margin per channel, harga saran sesuai target margin, modal, dan titik balik modal |
@@ -63,7 +84,7 @@ Fase hanya bisa ditutup kalau fase sebelumnya sudah selesai dan semua task
     <td><img src="docs/screenshots/hpp-harga.png" alt="HPP dan harga"></td>
   </tr>
   <tr>
-    <td align="center"><sub>Koleksi: pasangan model dan fase</sub></td>
+    <td align="center"><sub>Koleksi: pasangan model dan step</sub></td>
     <td align="center"><sub>HPP, harga per channel, dan paket couple</sub></td>
   </tr>
   <tr>
@@ -156,7 +177,7 @@ tes, build aset, cek format, dan audit dependensi di setiap push.
 
 ```
 app/
-  Actions/       Operasi sekali jalan (seed fase, tutup fase, bayar vendor)
+  Actions/       Operasi sekali jalan (seed step, tutup step, bayar vendor)
   Enums/         Status dan jenis: produk, vendor, kain, pesanan, campaign, …
   Livewire/      Halaman per modul
   Models/        Model Eloquent
