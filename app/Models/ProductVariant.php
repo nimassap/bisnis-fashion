@@ -14,13 +14,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *
  * @property-read int|null $sold_quantity
  */
-#[Fillable(['size', 'color', 'produced_quantity'])]
+#[Fillable(['size', 'color', 'planned_quantity', 'produced_quantity', 'rejected_quantity'])]
 final class ProductVariant extends Model
 {
     protected function casts(): array
     {
         return [
+            'planned_quantity' => 'integer',
             'produced_quantity' => 'integer',
+            'rejected_quantity' => 'integer',
         ];
     }
 

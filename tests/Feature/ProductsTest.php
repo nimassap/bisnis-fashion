@@ -136,6 +136,37 @@ final class ProductsTest extends TestCase
         $this->assertSame(ProductStatus::Sampling, $product->status);
     }
 
+    public function test_owner_adds_a_new_fabric_from_the_model_page(): void
+    {
+        $product = $this->product();
+
+        Livewire::test(ProductShow::class, ['product' => $product->id])
+            ->call('openFabricForm')
+            ->set('newFabricName', 'Wolfis')
+            ->set('newFabricPrice', '19.500')
+            ->call('createFabric')
+            ->assertHasNoErrors()
+            ->assertSet('showFabricForm', false)
+            ->set('fabricConsumption', '2')
+            // 2 m × 19.500, before the model is even saved.
+            ->assertSee('Rp 39.000')
+            ->call('saveDetails');
+
+        $fabric = $this->business->fabrics()->sole();
+        $this->assertSame('19500.00', $fabric->price_per_meter);
+        $this->assertSame($fabric->id, $product->fresh()->fabric_id);
+    }
+
+    public function test_new_fabric_needs_a_name(): void
+    {
+        Livewire::test(ProductShow::class, ['product' => $this->product()->id])
+            ->call('openFabricForm')
+            ->call('createFabric')
+            ->assertHasErrors('newFabricName');
+
+        $this->assertSame(0, $this->business->fabrics()->count());
+    }
+
     public function test_fabric_from_another_business_is_rejected(): void
     {
         $product = $this->product();

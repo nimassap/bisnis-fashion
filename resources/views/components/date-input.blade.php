@@ -69,11 +69,18 @@
     >
         <span class="flex min-w-0 items-center gap-2.5">
             <x-icon name="calendar" class="size-4 shrink-0 text-muted-foreground" />
-            @if ($display)
-                <span class="truncate" x-text="displayLabel() ?? {{ Illuminate\Support\Js::from($display) }}">{{ $display }}</span>
-            @else
-                <span class="truncate text-muted-foreground" x-show="! displayLabel()" x-text="displayLabel() ? '' : {{ Illuminate\Support\Js::from($placeholder) }}">{{ $placeholder }}</span>
-            @endif
+            {{--
+            | One label, always shown: the picked date, or the placeholder
+            | while there is none. It used to be two branches, and the empty
+            | one hid itself (x-show="! displayLabel()") the moment a date
+            | was picked, so a field that started empty went blank instead of
+            | showing the date it now held.
+            --}}
+            <span
+                class="truncate {{ $display ? '' : 'text-muted-foreground' }}"
+                :class="displayLabel() ? 'text-foreground' : 'text-muted-foreground'"
+                x-text="displayLabel() ?? {{ Illuminate\Support\Js::from($display ?? $placeholder) }}"
+            >{{ $display ?? $placeholder }}</span>
         </span>
     </button>
 

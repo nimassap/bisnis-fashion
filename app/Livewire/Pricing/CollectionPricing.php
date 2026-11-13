@@ -46,11 +46,24 @@ final class CollectionPricing extends Component
 
     public string $bundlePrice = '';
 
+    public string $bundleStrikePrice = '';
+
+    // Launch voucher and free-shipping subsidy, per piece sold.
+    public string $promoCost = '';
+
+    // Money set aside for this collection's production.
+    public string $availableCapital = '';
+
+    // Shown inside the Costing step rather than as its own page.
+    #[Locked]
+    public bool $embedded = false;
+
     // The channel the capital/break-even projection is worked out for.
     public string $projectionChannelId = '';
 
-    public function mount(int $collection): void
+    public function mount(int $collection, bool $embedded = false): void
     {
+        $this->embedded = $embedded;
         $collection = $this->findCollection($collection);
         $this->collectionId = $collection->id;
 
@@ -60,6 +73,8 @@ final class CollectionPricing extends Component
                 'waste' => self::decimal($product->fabric_waste_percent),
                 'quantity' => (string) $product->planned_quantity,
                 'price' => self::grouped($product->price),
+                'strike' => self::grouped($product->strike_price),
+                'reseller' => self::grouped($product->reseller_price),
                 'items' => $product->costItems->map(fn ($item) => [
                     'name' => $item->name,
                     'amount' => self::grouped($item->amount),
@@ -73,6 +88,9 @@ final class CollectionPricing extends Component
         ])->all();
 
         $this->bundlePrice = self::grouped($collection->bundle_price);
+        $this->bundleStrikePrice = self::grouped($collection->bundle_strike_price);
+        $this->promoCost = self::grouped($collection->promo_cost_per_piece);
+        $this->availableCapital = self::grouped($collection->available_capital);
         $this->projectionChannelId = (string) $this->activeChannels()->first()?->id;
     }
 
@@ -147,6 +165,11 @@ final class CollectionPricing extends Component
             'costs.*.name' => ['required', 'string', 'max:60'],
             'costs.*.amount' => ['nullable', new MoneyAmount(min: '0')],
             'bundlePrice' => ['nullable', new MoneyAmount(min: '0')],
+            'bundleStrikePrice' => ['nullable', new MoneyAmount(min: '0')],
+            'promoCost' => ['nullable', new MoneyAmount(min: '0')],
+            'availableCapital' => ['nullable', new MoneyAmount(min: '0')],
+            'models.*.strike' => ['nullable', new MoneyAmount(min: '0')],
+            'models.*.reseller' => ['nullable', new MoneyAmount(min: '0')],
         ], attributes: [
             'models.*.sewing' => __('pricing.sewing'),
             'models.*.waste' => __('pricing.waste_percent'),
@@ -174,6 +197,8 @@ final class CollectionPricing extends Component
                     'fabric_waste_percent' => $input['waste'] !== '' ? $input['waste'] : '0',
                     'planned_quantity' => $input['quantity'] !== '' ? (int) $input['quantity'] : null,
                     'price' => Money::parse($input['price']),
+                    'strike_price' => Money::parse($input['strike'] ?? ''),
+                    'reseller_price' => Money::parse($input['reseller'] ?? ''),
                 ]);
 
                 $product->costItems()->delete();
@@ -186,7 +211,12 @@ final class CollectionPricing extends Component
                 }
             }
 
-            $collection->update(['bundle_price' => Money::parse($this->bundlePrice)]);
+            $collection->update([
+                'bundle_price' => Money::parse($this->bundlePrice),
+                'bundle_strike_price' => Money::parse($this->bundleStrikePrice),
+                'promo_cost_per_piece' => Money::parse($this->promoCost),
+                'available_capital' => Money::parse($this->availableCapital),
+            ]);
 
             $collection->costs()->delete();
             foreach ($this->costs as $position => $cost) {
@@ -198,6 +228,7 @@ final class CollectionPricing extends Component
             }
         });
 
+        $this->dispatch('step-updated');
         $this->toastSuccess(__('pricing.saved'));
     }
 
@@ -235,7 +266,8 @@ final class CollectionPricing extends Component
                 'fabric' => $product->fabricCostPerPiece(),
                 'wastePercent' => is_numeric($w = str_replace(',', '.', trim($input['waste']))) ? $w : '0',
                 'sewing' => Money::parse($input['sewing']),
-                'items' => array_map(fn (array $i) => Money::parse($i['amount'] ?? ''), $input['items']),
+                // The launch promo per piece counts as one more cost line.
+                'items' => [...array_map(fn (array $i) => Money::parse($i['amount'] ?? ''), $input['items']), Money::parse($this->promoCost)],
                 'quantity' => ctype_digit(trim($input['quantity'])) ? (int) $input['quantity'] : 0,
                 'price' => Money::parse($input['price']),
             ];

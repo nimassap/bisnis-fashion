@@ -18,8 +18,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * One model of a couple set: the women's or the men's half of a collection.
  */
 #[Fillable([
-    'collection_id', 'gender', 'name', 'status', 'colors', 'fabric_id', 'fabric_consumption_m',
-    'fabric_waste_percent', 'sewing_cost', 'planned_quantity', 'price',
+    'collection_id', 'gender', 'name', 'status', 'colors', 'swatches', 'fit_notes', 'fabric_id', 'fabric_consumption_m',
+    'fabric_waste_percent', 'sewing_cost', 'planned_quantity', 'price', 'strike_price', 'reseller_price',
     'materials', 'construction_notes', 'size_points', 'description',
 ])]
 final class Product extends Model
@@ -37,7 +37,10 @@ final class Product extends Model
             'sewing_cost' => 'decimal:2',
             'planned_quantity' => 'integer',
             'price' => 'decimal:2',
+            'strike_price' => 'decimal:2',
+            'reseller_price' => 'decimal:2',
             'size_points' => 'array',
+            'swatches' => 'array',
         ];
     }
 
@@ -118,7 +121,25 @@ final class Product extends Model
      */
     public function colorList(): array
     {
+        if (! empty($this->swatches)) {
+            return array_values(array_filter(array_map(fn ($s) => trim((string) ($s['name'] ?? '')), $this->swatches), fn ($c) => $c !== ''));
+        }
+
         return array_values(array_filter(array_map('trim', explode(',', (string) $this->colors)), fn ($c) => $c !== ''));
+    }
+
+    /**
+     * The colours as swatches; colours typed as plain names get no hex.
+     *
+     * @return list<array{name: string, hex: ?string}>
+     */
+    public function swatchList(): array
+    {
+        if (! empty($this->swatches)) {
+            return array_values($this->swatches);
+        }
+
+        return array_map(fn (string $name) => ['name' => $name, 'hex' => null], $this->colorList());
     }
 
     /**

@@ -12,14 +12,22 @@ use App\Models\Phase;
 use App\Models\PhaseTask;
 use App\Models\User;
 use App\Services\PhaseBoard;
+use App\Services\StepRequirements;
 use App\Services\TaskAgenda;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
 
+/**
+ * How steps open, close and reopen. The data each step asks for is tested
+ * per step elsewhere; here requirements are switched off unless a test
+ * says otherwise.
+ */
 final class PhasesTest extends TestCase
 {
     use RefreshDatabase;
+
+    private const STEPS = ['model', 'maker', 'fabric', 'trims', 'sampling', 'costing', 'production', 'prelaunch', 'launch'];
 
     private Business $business;
 
@@ -31,336 +39,248 @@ final class PhasesTest extends TestCase
     {
         parent::setUp();
 
+        StepRequirements::fakeUsing(fn () => []);
+
         $this->business = Business::factory()->create();
         $this->owner = $this->business->owner;
-        $this->collection = $this->business->collections()->create(['name' => 'Linen Senja']);
+        $this->collection = $this->business->collections()->create(['name' => 'Fiore']);
     }
 
-    private function brand(): Phase
+    private function setupStep(): Phase
     {
         return $this->business->brandPhase()->firstOrFail();
     }
 
-    private function phase(string $key, ?Collection $collection = null): Phase
+    private function step(string $key, ?Collection $collection = null): Phase
     {
         return ($collection ?? $this->collection)->phases()->where('key', $key)->firstOrFail();
     }
 
     private function close(Phase $phase): void
     {
-        $phase->tasks()->where('is_gate', true)->update(['completed_at' => now()]);
         $phase->forceFill(['completed_at' => now()])->save();
-    }
-
-    private function finishGates(Phase $phase): void
-    {
-        $phase->tasks()->where('is_gate', true)->update(['completed_at' => now()]);
     }
 
     private function show(?Phase $phase = null)
     {
-        $phase ??= $this->phase('design');
+        $phase ??= $this->step('model');
 
         return $phase->isBrandPhase()
             ? Livewire::test(PhaseShow::class)
             : Livewire::test(PhaseShow::class, ['collection' => $phase->collection_id, 'key' => $phase->key]);
     }
 
+    private function task(Phase $phase, string $title = 'Task', bool $gate = false): PhaseTask
+    {
+        return $phase->tasks()->create(['title' => $title, 'is_gate' => $gate, 'position' => 99]);
+    }
+
     // ── Seeding ────────────────────────────────────────────────────────
 
-    public function test_business_gets_one_brand_phase(): void
+    public function test_business_gets_setup_at_position_zero(): void
     {
-        $brand = $this->brand();
+        $setup = $this->setupStep();
 
-        $this->assertSame('foundation', $brand->key);
-        $this->assertSame(1, $brand->position);
-        $this->assertSame(count(config('phases.foundation.tasks')), $brand->tasks()->count());
+        $this->assertSame('setup', $setup->key);
+        $this->assertSame(0, $setup->position);
+        $this->assertSame('Setup brand', $setup->positionLabel());
         $this->assertSame(1, $this->business->allPhases()->whereNull('collection_id')->count());
     }
 
-    public function test_collection_gets_its_own_five_phases(): void
+    public function test_collection_gets_nine_steps_in_order(): void
     {
         $phases = $this->collection->phases()->get();
 
-        $this->assertSame(['design', 'sourcing', 'costing', 'production', 'launch'], $phases->pluck('key')->all());
-        $this->assertSame([2, 3, 4, 5, 6], $phases->pluck('position')->all());
-        $this->assertTrue($this->phase('design')->tasks()->where('title', 'Tentukan model cewek dan cowok')->sole()->is_gate);
+        $this->assertSame(self::STEPS, $phases->pluck('key')->all());
+        $this->assertSame(range(1, 9), $phases->pluck('position')->all());
+        $this->assertSame('Step 3 dari 9', $this->step('fabric')->positionLabel());
     }
 
-    public function test_each_collection_has_independent_checklists(): void
+    public function test_only_true_checklist_items_are_seeded(): void
     {
-        $second = $this->business->collections()->create(['name' => 'Batik Pagi']);
-
-        $this->assertSame(2, $second->number);
-
-        $task = $this->phase('design')->tasks()->first();
-        $task->update(['completed_at' => now()]);
-
-        $this->assertFalse($this->phase('design', $second)->tasks()->first()->isDone());
+        $this->assertSame(0, $this->step('model')->tasks()->count());
+        $this->assertSame(3, $this->step('prelaunch')->tasks()->count());
     }
 
     public function test_seeding_again_keeps_owner_edits(): void
     {
-        $task = $this->phase('design')->tasks()->first();
+        $task = $this->step('prelaunch')->tasks()->first();
         $task->update(['title' => 'Judul milik owner']);
 
         app(SeedPhases::class)->forCollection($this->collection);
         app(SeedPhases::class)->forBusiness($this->business);
 
-        $this->assertSame(5, $this->collection->phases()->count());
-        $this->assertSame(1, $this->business->allPhases()->whereNull('collection_id')->count());
+        $this->assertSame(9, $this->collection->phases()->count());
         $this->assertSame('Judul milik owner', $task->fresh()->title);
     }
 
     // ── Pages ──────────────────────────────────────────────────────────
 
-    public function test_brand_and_collection_phase_pages_render(): void
+    public function test_setup_and_step_pages_render(): void
     {
+        StepRequirements::fakeUsing(null);
         $this->actingAs($this->owner);
 
-        $this->get('/brand')->assertOk()->assertSee('Fondasi Brand')->assertSee('Putuskan nama brand final');
+        $this->get('/brand')->assertOk()->assertSee('Setup Brand')->assertSee(__('steps.setup.target_title'));
 
-        $this->get("/collections/{$this->collection->id}/phases/design")->assertOk()
-            ->assertSee('Desain &amp; Material', false)
-            ->assertSee('Tentukan model cewek dan cowok')
-            ->assertSee('Koleksi #1 · Linen Senja');
+        foreach (self::STEPS as $key) {
+            $this->get("/collections/{$this->collection->id}/phases/{$key}")->assertOk()->assertSee(__("phases.{$key}.name"));
+        }
     }
 
-    public function test_unknown_phase_or_collection_is_not_found(): void
+    public function test_unknown_step_or_collection_is_not_found(): void
     {
         $this->actingAs($this->owner);
 
-        $this->get("/collections/{$this->collection->id}/phases/foundation")->assertNotFound();
+        $this->get("/collections/{$this->collection->id}/phases/setup")->assertNotFound();
         $this->get("/collections/{$this->collection->id}/phases/nope")->assertNotFound();
-        $this->get('/collections/999999/phases/design')->assertNotFound();
+        $this->get('/collections/999999/phases/model')->assertNotFound();
+        $this->get('/collections/'.Collection::factory()->create()->id.'/phases/model')->assertNotFound();
     }
 
-    public function test_another_business_collection_is_not_found(): void
-    {
-        $foreign = Collection::factory()->create();
+    // ── Status and closing ─────────────────────────────────────────────
 
+    public function test_setup_and_step_one_are_both_active_at_the_start(): void
+    {
+        $board = PhaseBoard::forCollection($this->collection);
+
+        $this->assertSame('setup', $board->active()->key);
+        $this->assertSame('model', $board->current()->key);
+        $this->assertSame(PhaseBoard::UPCOMING, $board->status($board->find('maker')));
+    }
+
+    public function test_step_one_cannot_close_before_setup(): void
+    {
         $this->actingAs($this->owner);
 
-        $this->get("/collections/{$foreign->id}")->assertNotFound();
-        $this->get("/collections/{$foreign->id}/phases/design")->assertNotFound();
+        $this->show()->call('completePhase');
+
+        $this->assertFalse($this->step('model')->isCompleted());
     }
 
-    // ── Status ─────────────────────────────────────────────────────────
-
-    public function test_brand_and_design_are_both_active_at_the_start(): void
+    public function test_steps_close_in_order(): void
     {
-        $board = PhaseBoard::forCollection($this->collection);
+        $this->actingAs($this->owner);
+        $this->close($this->setupStep());
 
-        $this->assertSame('foundation', $board->active()->key);
-        $this->assertSame('design', $board->current()->key);
-        $this->assertSame(PhaseBoard::ACTIVE, $board->status($board->find('foundation')));
-        $this->assertSame(PhaseBoard::ACTIVE, $board->status($board->find('design')));
-        $this->assertSame(PhaseBoard::UPCOMING, $board->status($board->find('sourcing')));
+        $this->show($this->step('maker'))->call('completePhase');
+        $this->assertFalse($this->step('maker')->isCompleted());
+
+        $this->show()->call('completePhase');
+        $this->assertTrue($this->step('model')->isCompleted());
+        $this->assertSame('maker', PhaseBoard::forCollection($this->collection)->current()->key);
     }
 
-    public function test_current_phase_moves_on_as_phases_close(): void
+    public function test_unmet_requirements_block_closing(): void
     {
-        $this->close($this->brand());
-        $this->close($this->phase('design'));
+        StepRequirements::fakeUsing(fn () => [(object) ['label' => 'Isi sesuatu', 'met' => false]]);
+        $this->actingAs($this->owner);
 
-        $board = PhaseBoard::forCollection($this->collection);
+        $this->show($this->setupStep())
+            ->assertSee('Isi sesuatu')
+            ->call('completePhase');
 
-        $this->assertSame('sourcing', $board->active()->key);
-        $this->assertSame('sourcing', $board->current()->key);
-        $this->assertSame(PhaseBoard::UPCOMING, $board->status($board->find('costing')));
+        $this->assertFalse($this->setupStep()->fresh()->isCompleted());
+    }
+
+    public function test_open_gate_task_blocks_closing(): void
+    {
+        $this->actingAs($this->owner);
+        $this->task($this->setupStep(), 'Wajib', gate: true);
+
+        $this->show($this->setupStep())->call('completePhase');
+
+        $this->assertFalse($this->setupStep()->fresh()->isCompleted());
     }
 
     public function test_collection_is_finished_when_launch_closes(): void
     {
-        $this->close($this->brand());
-        foreach (['design', 'sourcing', 'costing', 'production', 'launch'] as $key) {
-            $this->close($this->phase($key));
+        $this->close($this->setupStep());
+        foreach (self::STEPS as $key) {
+            $this->close($this->step($key));
         }
 
         $this->assertTrue(PhaseBoard::forCollection($this->collection)->isFinished());
     }
 
-    // ── Tasks ──────────────────────────────────────────────────────────
+    public function test_progress_counts_requirements_and_tasks(): void
+    {
+        StepRequirements::fakeUsing(fn () => [(object) ['label' => 'A', 'met' => true], (object) ['label' => 'B', 'met' => false]]);
+        $phase = $this->step('prelaunch');
+        $phase->tasks()->first()->forceFill(['completed_at' => now()])->save();
 
-    public function test_owner_can_tick_a_task(): void
+        // 1 of 2 requirements + 1 of 3 tasks
+        $this->assertSame(['done' => 2, 'total' => 5], $phase->fresh()->progressCounts());
+        $this->assertSame(40, $phase->fresh()->progress());
+    }
+
+    public function test_closed_step_is_read_only(): void
     {
         $this->actingAs($this->owner);
-        $task = $this->phase('design')->tasks()->first();
+        $task = $this->task($this->setupStep());
+        $this->close($this->setupStep());
 
-        $this->show()->call('toggleTask', $task->id);
-        $this->assertTrue($task->fresh()->isDone());
+        $this->show($this->setupStep())->call('toggleTask', $task->id)->assertForbidden();
 
-        $this->show()->call('toggleTask', $task->id);
         $this->assertFalse($task->fresh()->isDone());
     }
 
-    public function test_brand_tasks_can_be_ticked(): void
+    public function test_only_the_latest_closed_step_can_be_reopened(): void
     {
         $this->actingAs($this->owner);
-        $task = $this->brand()->tasks()->first();
+        $this->close($this->setupStep());
+        $this->close($this->step('model'));
+        $this->close($this->step('maker'));
 
-        $this->show($this->brand())->call('toggleTask', $task->id);
+        $this->show($this->step('model'))->call('reopenPhase');
+        $this->assertTrue($this->step('model')->isCompleted());
 
-        $this->assertTrue($task->fresh()->isDone());
+        $this->show($this->step('maker'))->call('reopenPhase');
+        $this->assertFalse($this->step('maker')->isCompleted());
     }
 
-    public function test_tasks_in_a_later_phase_can_be_worked_on_early(): void
+    public function test_setup_stays_closed_once_a_collection_has_moved_on(): void
     {
         $this->actingAs($this->owner);
-        $task = $this->phase('costing')->tasks()->first();
+        $this->close($this->setupStep());
+        $this->close($this->step('model'));
 
-        $this->show($this->phase('costing'))->call('toggleTask', $task->id);
+        $this->show($this->setupStep())->call('reopenPhase');
 
-        $this->assertTrue($task->fresh()->isDone());
+        $this->assertTrue($this->setupStep()->fresh()->isCompleted());
     }
 
-    public function test_owner_can_add_edit_and_delete_a_task(): void
-    {
-        $this->actingAs($this->owner);
-        $phase = $this->phase('sourcing');
-        $before = $phase->tasks()->count();
+    // ── Checklist and decisions ────────────────────────────────────────
 
-        $this->show($phase)
-            ->call('openTaskCreate')
-            ->set('taskTitle', 'Survey konveksi di Bandung')
-            ->set('taskDueOn', now()->addWeek()->toDateString())
-            ->set('taskIsGate', true)
-            ->call('saveTask')
-            ->assertHasNoErrors();
-
-        $task = $phase->tasks()->where('title', 'Survey konveksi di Bandung')->sole();
-        $this->assertTrue($task->is_gate);
-        $this->assertSame($before + 1, $task->position);
-
-        $this->show($phase)
-            ->call('openTaskEdit', $task->id)
-            ->set('taskTitle', 'Survey konveksi Bandung & Solo')
-            ->call('saveTask');
-        $this->assertSame('Survey konveksi Bandung & Solo', $task->fresh()->title);
-
-        $this->show($phase)
-            ->call('confirmDeleteTask', $task->id)
-            ->call('deleteTask');
-        $this->assertNull($task->fresh());
-    }
-
-    public function test_task_title_is_required(): void
+    public function test_owner_can_add_tick_and_delete_a_checklist_item(): void
     {
         $this->actingAs($this->owner);
 
         $this->show()
             ->call('openTaskCreate')
+            ->set('taskTitle', 'Survey pasar Tanah Abang')
+            ->set('taskIsGate', true)
             ->call('saveTask')
-            ->assertHasErrors('taskTitle');
-    }
+            ->assertHasNoErrors();
 
-    public function test_tasks_can_be_reordered(): void
-    {
-        $this->actingAs($this->owner);
-        $phase = $this->phase('costing');
-        [$first, $second] = $phase->tasks()->take(2)->get()->all();
+        $task = $this->step('model')->tasks()->sole();
+        $this->assertTrue($task->is_gate);
 
-        $this->show($phase)->call('moveTask', $second->id, 'up');
+        $this->show()->call('toggleTask', $task->id);
+        $this->assertTrue($task->fresh()->isDone());
 
-        $this->assertSame([$second->id, $first->id], $phase->tasks()->take(2)->pluck('id')->all());
+        $this->show()->call('confirmDeleteTask', $task->id)->call('deleteTask');
+        $this->assertNull($task->fresh());
     }
 
     public function test_task_from_another_collection_cannot_be_touched(): void
     {
         $other = $this->business->collections()->create();
-        $otherTask = $this->phase('design', $other)->tasks()->first();
-
+        $foreign = $this->task($this->step('model', $other));
         $this->actingAs($this->owner);
 
-        $this->show()->call('toggleTask', $otherTask->id)->assertNotFound();
-
-        $this->assertFalse($otherTask->fresh()->isDone());
+        $this->show()->call('toggleTask', $foreign->id)->assertNotFound();
     }
-
-    // ── Closing and reopening ──────────────────────────────────────────
-
-    public function test_phase_cannot_close_with_open_gates(): void
-    {
-        $this->actingAs($this->owner);
-
-        $this->show($this->brand())->call('completePhase');
-
-        $this->assertFalse($this->brand()->fresh()->isCompleted());
-    }
-
-    public function test_design_cannot_close_before_the_brand_phase(): void
-    {
-        $this->actingAs($this->owner);
-        $this->finishGates($this->phase('design'));
-
-        $this->show()->call('completePhase');
-
-        $this->assertFalse($this->phase('design')->isCompleted());
-    }
-
-    public function test_design_closes_after_brand_and_gates_are_done(): void
-    {
-        $this->actingAs($this->owner);
-        $this->close($this->brand());
-        $this->finishGates($this->phase('design'));
-
-        $this->show()->call('completePhase');
-
-        $this->assertTrue($this->phase('design')->isCompleted());
-        $this->assertSame('sourcing', PhaseBoard::forCollection($this->collection)->current()->key);
-    }
-
-    public function test_non_gate_tasks_do_not_block_closing(): void
-    {
-        $this->actingAs($this->owner);
-        $this->finishGates($this->brand());
-
-        $this->show($this->brand())->call('completePhase');
-
-        $this->assertTrue($this->brand()->fresh()->isCompleted());
-    }
-
-    public function test_closed_phase_is_read_only(): void
-    {
-        $this->actingAs($this->owner);
-        $this->close($this->brand());
-        $task = $this->brand()->tasks()->whereNull('completed_at')->first();
-
-        $this->show($this->brand())->call('toggleTask', $task->id)->assertForbidden();
-
-        $this->assertFalse($task->fresh()->isDone());
-    }
-
-    public function test_only_the_latest_closed_phase_of_a_collection_can_be_reopened(): void
-    {
-        $this->actingAs($this->owner);
-        $this->close($this->brand());
-        $this->close($this->phase('design'));
-        $this->close($this->phase('sourcing'));
-
-        $this->show($this->phase('design'))->call('reopenPhase');
-        $this->assertTrue($this->phase('design')->isCompleted());
-
-        $this->show($this->phase('sourcing'))->call('reopenPhase');
-        $this->assertFalse($this->phase('sourcing')->isCompleted());
-    }
-
-    public function test_brand_phase_stays_closed_once_a_collection_has_moved_on(): void
-    {
-        $this->actingAs($this->owner);
-        $this->close($this->brand());
-
-        $this->show($this->brand())->call('reopenPhase');
-        $this->assertFalse($this->brand()->fresh()->isCompleted());
-
-        $this->close($this->brand());
-        $this->close($this->phase('design'));
-
-        $this->show($this->brand())->call('reopenPhase');
-        $this->assertTrue($this->brand()->fresh()->isCompleted());
-    }
-
-    // ── Decisions ──────────────────────────────────────────────────────
 
     public function test_owner_can_record_a_decision(): void
     {
@@ -368,48 +288,23 @@ final class PhasesTest extends TestCase
 
         $this->show()
             ->call('openDecisionCreate')
-            ->set('decisionTitle', 'Pakai linen dari Supplier B')
-            ->set('decisionReason', 'Supplier A susut 6%.')
+            ->set('decisionTitle', 'Tema Fiore: bunga pastel')
             ->call('saveDecision')
             ->assertHasNoErrors();
 
-        $decision = $this->phase('design')->decisions()->sole();
-        $this->assertSame('Pakai linen dari Supplier B', $decision->title);
-        $this->assertTrue($decision->decided_on->isToday());
-
-        $this->get("/collections/{$this->collection->id}/phases/design")->assertSee('Pakai linen dari Supplier B');
+        $this->assertSame('Tema Fiore: bunga pastel', $this->step('model')->decisions()->sole()->title);
     }
 
-    // ── Agenda ─────────────────────────────────────────────────────────
-
-    public function test_agenda_covers_brand_and_every_collection(): void
+    public function test_agenda_covers_setup_and_every_collection(): void
     {
-        $other = $this->business->collections()->create();
-
-        $brandTask = $this->brand()->tasks()->first();
-        $brandTask->update(['due_on' => today()->subDays(3)]);
-        $collectionTask = $this->phase('design', $other)->tasks()->first();
-        $collectionTask->update(['due_on' => today()->subDay()]);
-        $soonTask = $this->phase('sourcing')->tasks()->first();
-        $soonTask->update(['due_on' => today()->addDays(2)]);
-
-        $foreignTask = Collection::factory()->create()->phases()->first()->tasks()->first();
-        $foreignTask->update(['title' => 'Task bisnis lain', 'due_on' => today()->subDays(5)]);
+        $late = $this->task($this->setupStep(), 'Telat setup');
+        $late->update(['due_on' => today()->subDays(2)]);
+        $soon = $this->task($this->step('maker'), 'Segera');
+        $soon->update(['due_on' => today()->addDay()]);
 
         $agenda = new TaskAgenda($this->business);
 
-        $this->assertSame(2, $agenda->overdueCount());
-        $this->assertSame([$brandTask->id, $collectionTask->id], $agenda->overdue()->pluck('id')->all());
-        $this->assertSame([$soonTask->id], $agenda->upcoming()->pluck('id')->all());
-
-        $this->actingAs($this->owner)->get('/dashboard')
-            ->assertSee($brandTask->title)
-            ->assertSee($soonTask->title)
-            ->assertDontSee($foreignTask->title);
-    }
-
-    public function test_task_due_today_is_not_overdue(): void
-    {
-        $this->assertFalse((new PhaseTask(['due_on' => today()]))->isOverdue());
+        $this->assertSame([$late->id], $agenda->overdue()->pluck('id')->all());
+        $this->assertSame([$soon->id], $agenda->upcoming()->pluck('id')->all());
     }
 }

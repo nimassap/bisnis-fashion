@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 /**
  * A payment owed to a vendor on a date: a deposit, a balance, an invoice.
  */
-#[Fillable(['collection_id', 'vendor_id', 'cash_category_id', 'title', 'amount', 'due_on', 'notes'])]
+#[Fillable(['collection_id', 'vendor_id', 'cash_category_id', 'source', 'title', 'amount', 'due_on', 'notes'])]
 final class VendorPayment extends Model
 {
     protected function casts(): array

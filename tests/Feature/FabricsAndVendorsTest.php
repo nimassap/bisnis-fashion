@@ -156,6 +156,37 @@ final class FabricsAndVendorsTest extends TestCase
         $this->get('/fabrics')->assertSee('Linen Rami')->assertSee('Toko Kain Sejahtera')->assertSee('Susut 2,5%');
     }
 
+    public function test_fabric_width_accepts_a_comma_decimal(): void
+    {
+        Livewire::test(FabricsIndex::class)
+            ->call('openCreate')
+            ->set('name', 'Wolfis')
+            ->set('widthCm', '36,5')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $fabric = $this->business->fabrics()->sole();
+        $this->assertSame('36.5', $fabric->width_cm);
+
+        // Shown and edited back the Indonesian way.
+        $this->get('/fabrics')->assertSee('36,5 cm');
+        Livewire::test(FabricsIndex::class)
+            ->call('openEdit', $fabric->id)
+            ->assertSet('widthCm', '36,5');
+    }
+
+    public function test_fabric_width_rejects_nonsense(): void
+    {
+        foreach (['lebar', '0', '36,55'] as $typed) {
+            Livewire::test(FabricsIndex::class)
+                ->call('openCreate')
+                ->set('name', 'Kain')
+                ->set('widthCm', $typed)
+                ->call('save')
+                ->assertHasErrors('widthCm');
+        }
+    }
+
     public function test_replacing_a_swatch_removes_the_old_file(): void
     {
         $fabric = Fabric::factory()->for($this->business)->create();
@@ -190,6 +221,37 @@ final class FabricsAndVendorsTest extends TestCase
 
         $this->assertNull($fabric->fresh());
         $this->assertNull($product->fresh()->fabric_id);
+    }
+
+    public function test_owner_adds_a_supplier_from_the_fabric_form(): void
+    {
+        Livewire::test(FabricsIndex::class)
+            ->call('openCreate')
+            ->set('name', 'Wolfis')
+            ->call('openSupplierForm')
+            ->set('newSupplierName', 'GLOSIRGAMISBANDUNG98')
+            ->set('newSupplierLocation', 'Bandung')
+            ->call('createSupplier')
+            ->assertHasNoErrors()
+            ->assertSet('showSupplierForm', false)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $supplier = $this->business->vendors()->sole();
+        $this->assertSame(VendorType::Fabric, $supplier->type);
+        $this->assertSame('Bandung', $supplier->location);
+        $this->assertSame($supplier->id, $this->business->fabrics()->sole()->vendor_id);
+    }
+
+    public function test_new_supplier_needs_a_name(): void
+    {
+        Livewire::test(FabricsIndex::class)
+            ->call('openCreate')
+            ->call('openSupplierForm')
+            ->call('createSupplier')
+            ->assertHasErrors('newSupplierName');
+
+        $this->assertSame(0, $this->business->vendors()->count());
     }
 
     public function test_fabric_supplier_must_belong_to_the_business(): void

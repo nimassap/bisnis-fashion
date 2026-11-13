@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
-    'vendor_id', 'name', 'composition', 'gsm', 'width_cm', 'price_per_meter', 'colors',
+    'vendor_id', 'name', 'composition', 'gsm', 'width_cm', 'price_per_meter', 'price_unit', 'min_order', 'delivery_days', 'colors',
     'shrinkage_percent', 'colorfast', 'comfort_rating', 'status', 'notes',
 ])]
 final class Fabric extends Model
@@ -27,17 +27,29 @@ final class Fabric extends Model
         return [
             'status' => FabricStatus::class,
             'gsm' => 'integer',
-            'width_cm' => 'integer',
+            'width_cm' => 'decimal:1',
             'price_per_meter' => 'decimal:2',
             'shrinkage_percent' => 'decimal:1',
             'colorfast' => 'boolean',
             'comfort_rating' => 'integer',
+            'delivery_days' => 'integer',
         ];
     }
 
     protected static function booted(): void
     {
         self::deleted(fn (self $fabric) => MediaStore::delete($fabric->swatch_path));
+    }
+
+    /** Units a fabric can be priced in. */
+    public const UNITS = ['meter', 'kg'];
+
+    /**
+     * "m" or "kg": the unit both the price and a model's consumption use.
+     */
+    public function unitLabel(): string
+    {
+        return __('fabrics.units_short.'.($this->price_unit ?: 'meter'));
     }
 
     /**

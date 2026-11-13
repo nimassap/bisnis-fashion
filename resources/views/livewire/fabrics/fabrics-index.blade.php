@@ -1,5 +1,6 @@
 @php
     use App\Enums\FabricStatus;
+    use App\Support\Decimal;
     use App\Support\MediaStore;
 
     $filterOptions = ['' => __('common.all')] + FabricStatus::options();
@@ -52,7 +53,7 @@
 
                         <dl class="grid grid-cols-3 gap-2 text-sm">
                             <div>
-                                <dt class="text-xs text-muted-foreground">{{ __('fabrics.price_per_meter_short') }}</dt>
+                                <dt class="text-xs text-muted-foreground">{{ __('fabrics.price_short') }}/{{ $fabric->unitLabel() }}</dt>
                                 <dd>@if ($fabric->price_per_meter !== null)<x-amount :value="$fabric->price_per_meter" compact />@else – @endif</dd>
                             </div>
                             <div>
@@ -61,13 +62,13 @@
                             </div>
                             <div>
                                 <dt class="text-xs text-muted-foreground">{{ __('fabrics.width_short') }}</dt>
-                                <dd class="numeric">{{ $fabric->width_cm ? $fabric->width_cm.' cm' : '–' }}</dd>
+                                <dd class="numeric">{{ $fabric->width_cm !== null ? Decimal::display($fabric->width_cm).' cm' : '–' }}</dd>
                             </div>
                         </dl>
 
                         <div class="flex flex-wrap gap-1.5">
                             @if ($fabric->shrinkage_percent !== null)
-                                <x-status-badge :tone="(float) $fabric->shrinkage_percent > 3 ? 'warning' : 'success'" :label="__('fabrics.shrinkage_badge', ['value' => str_replace('.', ',', rtrim(rtrim((string) $fabric->shrinkage_percent, '0'), '.'))])" />
+                                <x-status-badge :tone="(float) $fabric->shrinkage_percent > 3 ? 'warning' : 'success'" :label="__('fabrics.shrinkage_badge', ['value' => Decimal::display($fabric->shrinkage_percent)])" />
                             @endif
                             @if ($fabric->colorfast !== null)
                                 <x-status-badge :tone="$fabric->colorfast ? 'success' : 'danger'" :label="$fabric->colorfast ? __('fabrics.colorfast_yes') : __('fabrics.colorfast_no')" />
@@ -115,6 +116,37 @@
                         <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
                     @endforeach
                 </select>
+
+                {{--
+                | Inline rather than a second modal: two focus-trapped dialogs
+                | stacked on each other lock the page. Enter here saves the
+                | supplier, not the whole fabric form around it.
+                --}}
+                @if ($showSupplierForm)
+                    <div class="mt-2 space-y-3 rounded-xl border border-primary/30 bg-primary-soft p-3.5">
+                        <p class="text-sm font-semibold text-foreground">{{ __('fabrics.new_supplier') }}</p>
+                        <x-field :label="__('vendors.name')" for="newSupplierName" :error="$errors->first('newSupplierName')" required>
+                            <input type="text" id="newSupplierName" wire:model="newSupplierName" @keydown.enter.prevent="$wire.createSupplier()" class="input @error('newSupplierName') input-invalid @enderror" placeholder="{{ __('fabrics.new_supplier_placeholder') }}" />
+                        </x-field>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <x-field :label="__('vendors.location')" for="newSupplierLocation" :error="$errors->first('newSupplierLocation')">
+                                <input type="text" id="newSupplierLocation" wire:model="newSupplierLocation" @keydown.enter.prevent="$wire.createSupplier()" class="input" />
+                            </x-field>
+                            <x-field :label="__('vendors.phone')" for="newSupplierPhone" :error="$errors->first('newSupplierPhone')">
+                                <input type="tel" id="newSupplierPhone" wire:model="newSupplierPhone" @keydown.enter.prevent="$wire.createSupplier()" class="input" inputmode="tel" />
+                            </x-field>
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" class="btn-ghost btn-sm" wire:click="$set('showSupplierForm', false)">{{ __('common.cancel') }}</button>
+                            <button type="button" class="btn-primary btn-sm" wire:click="createSupplier" wire:loading.attr="disabled" wire:target="createSupplier">{{ __('fabrics.save_supplier') }}</button>
+                        </div>
+                    </div>
+                @else
+                    <button type="button" class="btn-ghost btn-sm mt-1.5 px-2" wire:click="openSupplierForm">
+                        <x-icon name="plus" class="size-4" />
+                        <span>{{ __('fabrics.add_supplier') }}</span>
+                    </button>
+                @endif
             </x-field>
 
             <div class="grid gap-5 sm:grid-cols-2">
@@ -131,7 +163,7 @@
                     <input type="number" id="gsm" wire:model="gsm" min="1" class="input numeric" inputmode="numeric" />
                 </x-field>
                 <x-field :label="__('fabrics.width_cm')" for="widthCm" :error="$errors->first('widthCm')">
-                    <input type="number" id="widthCm" wire:model="widthCm" min="1" class="input numeric" inputmode="numeric" />
+                    <input type="text" id="widthCm" wire:model="widthCm" class="input numeric @error('widthCm') input-invalid @enderror" inputmode="decimal" placeholder="150" />
                 </x-field>
             </div>
 

@@ -140,15 +140,16 @@ final class PhaseBoard
     /**
      * Share of all tasks done across the run, 0–100.
      */
+    /**
+     * Average progress of the steps in the run, 0–100.
+     */
     public function overallProgress(): int
     {
-        $total = $this->phases->sum('tasks_count');
-
-        if ($total === 0) {
+        if ($this->phases->isEmpty()) {
             return 0;
         }
 
-        return (int) floor($this->phases->sum('done_tasks_count') / $total * 100);
+        return (int) floor($this->phases->avg(fn (Phase $phase) => $phase->progress()));
     }
 
     public function completedCount(): int

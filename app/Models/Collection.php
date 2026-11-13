@@ -16,7 +16,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * One production run: one couple set, a women's and a men's model made and
  * launched together. Runs through the design-to-launch phases on its own.
  */
-#[Fillable(['number', 'name', 'target_launch_on', 'bundle_price', 'notes'])]
+#[Fillable([
+    'number', 'name', 'theme', 'theme_notes', 'maker_vendor_id', 'target_launch_on', 'bundle_price', 'bundle_strike_price',
+    'promo_cost_per_piece', 'available_capital', 'notes',
+    'production_started_on', 'production_due_on', 'materials_sent_on', 'cutting_done_on', 'sewing_done_on', 'finishing_done_on', 'qc_done_on', 'received_on', 'launched_on',
+    'shipping_courier', 'shipping_tracking', 'shot_list', 'launch_concept', 'launch_promo', 'evaluation',
+])]
 final class Collection extends Model
 {
     /** @use HasFactory<CollectionFactory> */
@@ -28,6 +33,18 @@ final class Collection extends Model
             'number' => 'integer',
             'target_launch_on' => 'immutable_date',
             'bundle_price' => 'decimal:2',
+            'bundle_strike_price' => 'decimal:2',
+            'promo_cost_per_piece' => 'decimal:2',
+            'available_capital' => 'decimal:2',
+            'production_started_on' => 'immutable_date',
+            'production_due_on' => 'immutable_date',
+            'materials_sent_on' => 'immutable_date',
+            'cutting_done_on' => 'immutable_date',
+            'sewing_done_on' => 'immutable_date',
+            'finishing_done_on' => 'immutable_date',
+            'qc_done_on' => 'immutable_date',
+            'received_on' => 'immutable_date',
+            'launched_on' => 'immutable_date',
         ];
     }
 
@@ -43,7 +60,10 @@ final class Collection extends Model
 
         // Deleted one by one rather than left to the database cascade, so
         // each model's photo goes with it.
-        self::deleting(fn (self $collection) => $collection->products()->get()->each->delete());
+        self::deleting(function (self $collection): void {
+            $collection->products()->get()->each->delete();
+            $collection->media()->get()->each->delete();
+        });
     }
 
     /**
@@ -78,6 +98,72 @@ final class Collection extends Model
     public function costs(): HasMany
     {
         return $this->hasMany(CollectionCost::class)->orderBy('position')->orderBy('id');
+    }
+
+    /**
+     * @return BelongsTo<Vendor, $this>
+     */
+    public function maker(): BelongsTo
+    {
+        return $this->belongsTo(Vendor::class, 'maker_vendor_id');
+    }
+
+    /**
+     * @return HasMany<MakerQuote, $this>
+     */
+    public function makerQuotes(): HasMany
+    {
+        return $this->hasMany(MakerQuote::class)->orderBy('id');
+    }
+
+    /**
+     * @return HasMany<TrimQuote, $this>
+     */
+    public function trimQuotes(): HasMany
+    {
+        return $this->hasMany(TrimQuote::class)->orderBy('id');
+    }
+
+    /**
+     * @return HasMany<CollectionMedia, $this>
+     */
+    public function media(): HasMany
+    {
+        return $this->hasMany(CollectionMedia::class)->orderBy('id');
+    }
+
+    /**
+     * The maker's offer that was chosen, if any.
+     */
+    /**
+     * @return HasMany<Listing, $this>
+     */
+    public function listings(): HasMany
+    {
+        return $this->hasMany(Listing::class);
+    }
+
+    /**
+     * @return HasMany<ContentPost, $this>
+     */
+    public function contentPosts(): HasMany
+    {
+        return $this->hasMany(ContentPost::class);
+    }
+
+    /**
+     * @return HasMany<Campaign, $this>
+     */
+    public function campaigns(): HasMany
+    {
+        return $this->hasMany(Campaign::class);
+    }
+
+    public function chosenMakerQuote(): ?MakerQuote
+    {
+        return $this->maker_vendor_id === null
+            ? null
+            : $this->makerQuotes()->where('vendor_id', $this->maker_vendor_id)->first();
     }
 
     /**

@@ -69,6 +69,10 @@
                                 <option value="{{ $fabric->id }}">{{ $fabric->name }}{{ $fabric->status->value === 'chosen' ? ' ✓' : '' }}</option>
                             @endforeach
                         </select>
+                        <button type="button" class="btn-ghost btn-sm mt-1.5 px-2" wire:click="openFabricForm">
+                            <x-icon name="plus" class="size-4" />
+                            <span>{{ __('products.add_fabric') }}</span>
+                        </button>
                     </x-field>
                     <x-field :label="__('products.fabric_consumption')" for="fabricConsumption" :hint="__('products.fabric_consumption_hint')" :error="$errors->first('fabricConsumption')">
                         <input type="text" id="fabricConsumption" wire:model.live.debounce.400ms="fabricConsumption" class="input numeric" inputmode="decimal" placeholder="1.8" />
@@ -294,6 +298,26 @@
             </div>
         @endif
     </form>
+
+    {{-- Quick-add fabric --}}
+    <x-modal :open="$showFabricForm" close="closeFabricForm" :title="__('products.add_fabric')" :description="__('products.add_fabric_hint')" max-width="md">
+        <form id="quick-fabric-form" wire:submit="createFabric" class="space-y-5">
+            <x-field :label="__('fabrics.name')" for="newFabricName" :error="$errors->first('newFabricName')" required>
+                <input type="text" id="newFabricName" wire:model="newFabricName" class="input @error('newFabricName') input-invalid @enderror" placeholder="{{ __('fabrics.name_placeholder') }}" autofocus />
+            </x-field>
+            <x-field :label="__('fabrics.price_per_meter')" for="newFabricPrice" :error="$errors->first('newFabricPrice')">
+                <x-money-input model="newFabricPrice" :invalid="$errors->has('newFabricPrice')" />
+            </x-field>
+            <x-field :label="__('fabrics.composition')" for="newFabricComposition" :error="$errors->first('newFabricComposition')">
+                <input type="text" id="newFabricComposition" wire:model="newFabricComposition" class="input" placeholder="{{ __('fabrics.composition_placeholder') }}" />
+            </x-field>
+        </form>
+
+        <x-slot:footer>
+            <button type="button" class="btn-secondary sm:w-auto" wire:click="closeFabricForm">{{ __('common.cancel') }}</button>
+            <button type="submit" form="quick-fabric-form" class="btn-primary sm:w-auto" wire:loading.attr="disabled" wire:target="createFabric">{{ __('products.add_fabric') }}</button>
+        </x-slot:footer>
+    </x-modal>
 
     {{-- Sample form --}}
     <x-modal :open="$showSampleForm" close="closeSampleForm" :title="$editingSampleId ? __('products.edit_sample') : __('products.add_sample')">

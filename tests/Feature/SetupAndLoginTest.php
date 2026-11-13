@@ -40,7 +40,7 @@ final class SetupAndLoginTest extends TestCase
         $this->assertSame(1, $collection->number);
         $this->assertSame('Linen Senja', $collection->name);
         $this->assertNotNull($user->business->brandPhase);
-        $this->assertSame(5, $collection->phases()->count());
+        $this->assertSame(9, $collection->phases()->count());
     }
 
     public function test_setup_is_closed_once_an_owner_exists(): void

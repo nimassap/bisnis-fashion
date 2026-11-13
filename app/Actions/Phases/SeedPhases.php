@@ -33,9 +33,9 @@ final class SeedPhases
             ->pluck('key')
             ->all();
 
-        // Positions run 1–6 across both scopes, so a collection's design
-        // phase reads as "phase 2 of 6" right after the brand phase.
-        $position = 0;
+        // Setup Brand is position 0; a collection's steps run 1–9 after it,
+        // so "step 1" is the first step of the collection itself.
+        $position = -1;
 
         foreach (config('phases') as $key => $definition) {
             $position++;

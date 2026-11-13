@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Services\PhaseBoard;
+use App\Services\StepRequirements;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -88,6 +89,20 @@ final class Phase extends Model
         return __("phases.{$this->key}.summary");
     }
 
+    /**
+     * "Setup brand" for the business step, "Step 3 dari 9" for a
+     * collection's own steps.
+     */
+    public function positionLabel(): string
+    {
+        return $this->isBrandPhase()
+            ? __('steps.setup_label')
+            : __('steps.position', [
+                'current' => $this->position,
+                'total' => collect(config('phases'))->where('scope', 'collection')->count(),
+            ]);
+    }
+
     public function icon(): string
     {
         return (string) config("phases.{$this->key}.icon", 'list');
@@ -102,13 +117,42 @@ final class Phase extends Model
      * Share of tasks done, 0–100. Needs the counts loaded by
      * {@see PhaseBoard}.
      */
-    public function progress(): int
+    /** @var array{done: int, total: int}|null */
+    private ?array $progressCache = null;
+
+    /**
+     * Requirements met plus checklist items done, out of both together.
+     *
+     * @return array{done: int, total: int}
+     */
+    public function progressCounts(): array
     {
-        if (! $this->tasks_count) {
-            return $this->isCompleted() ? 100 : 0;
+        if ($this->progressCache !== null) {
+            return $this->progressCache;
         }
 
-        return (int) floor($this->done_tasks_count / $this->tasks_count * 100);
+        $requirements = StepRequirements::for($this);
+        $tasks = $this->tasks_count ?? $this->tasks()->count();
+        $doneTasks = $this->done_tasks_count ?? $this->tasks()->whereNotNull('completed_at')->count();
+
+        return $this->progressCache = [
+            'done' => count(array_filter($requirements, fn (object $r) => $r->met)) + (int) $doneTasks,
+            'total' => count($requirements) + (int) $tasks,
+        ];
+    }
+
+    /**
+     * Share of the step done, 0–100. A closed step is always 100.
+     */
+    public function progress(): int
+    {
+        if ($this->isCompleted()) {
+            return 100;
+        }
+
+        ['done' => $done, 'total' => $total] = $this->progressCounts();
+
+        return $total > 0 ? (int) floor($done / $total * 100) : 0;
     }
 
     public function openGateCount(): int

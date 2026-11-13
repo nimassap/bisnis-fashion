@@ -4,20 +4,27 @@
 @endphp
 
 <div class="space-y-6">
-    <a href="{{ route('collections.show', $collection) }}" wire:navigate class="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
-        <x-icon name="chevron-left" class="size-4" />
-        <span>{{ $collection->label() }}</span>
-    </a>
+    @if ($embedded)
+        <div class="panel-padded flex flex-wrap items-center justify-between gap-3">
+            <p class="text-sm text-pretty text-muted-foreground">{{ __('pricing.collection_subtitle', ['target' => $targetLabel]) }}</p>
+            <button type="button" class="btn-primary btn-sm" wire:click="save" wire:loading.attr="disabled" wire:target="save">{{ __('common.save_changes') }}</button>
+        </div>
+    @else
+        <a href="{{ route('collections.show', $collection) }}" wire:navigate class="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
+            <x-icon name="chevron-left" class="size-4" />
+            <span>{{ $collection->label() }}</span>
+        </a>
 
-    <x-page-header
-        :eyebrow="$collection->label()"
-        :title="__('pricing.title')"
-        :subtitle="__('pricing.collection_subtitle', ['target' => $targetLabel])"
-    >
-        <button type="button" class="btn-primary" wire:click="save" wire:loading.attr="disabled" wire:target="save">
-            {{ __('common.save_changes') }}
-        </button>
-    </x-page-header>
+        <x-page-header
+            :eyebrow="$collection->label()"
+            :title="__('pricing.title')"
+            :subtitle="__('pricing.collection_subtitle', ['target' => $targetLabel])"
+        >
+            <button type="button" class="btn-primary" wire:click="save" wire:loading.attr="disabled" wire:target="save">
+                {{ __('common.save_changes') }}
+            </button>
+        </x-page-header>
+    @endif
 
     @if ($products->isEmpty())
         <div class="panel">
@@ -116,9 +123,29 @@
 
                     {{-- Price --}}
                     <div class="space-y-3 border-t border-hairline pt-5">
-                        <x-field :label="__('pricing.price')" for="models.{{ $id }}.price" :error="$errors->first('models.'.$id.'.price')">
-                            <x-money-input model="models.{{ $id }}.price" live :invalid="$errors->has('models.'.$id.'.price')" />
-                        </x-field>
+                        <div class="grid gap-3 sm:grid-cols-3">
+                            <x-field :label="__('pricing.price')" for="models.{{ $id }}.price" :error="$errors->first('models.'.$id.'.price')">
+                                <x-money-input model="models.{{ $id }}.price" live :invalid="$errors->has('models.'.$id.'.price')" />
+                            </x-field>
+                            <x-field :label="__('pricing.strike_price')" for="models.{{ $id }}.strike" :hint="__('pricing.strike_hint')" :error="$errors->first('models.'.$id.'.strike')">
+                                <x-money-input model="models.{{ $id }}.strike" :invalid="$errors->has('models.'.$id.'.strike')" />
+                            </x-field>
+                            <x-field :label="__('pricing.reseller_price')" for="models.{{ $id }}.reseller" :error="$errors->first('models.'.$id.'.reseller')">
+                                <x-money-input model="models.{{ $id }}.reseller" live :invalid="$errors->has('models.'.$id.'.reseller')" />
+                            </x-field>
+                        </div>
+
+                        @php
+                            $reseller = \App\Support\Money::parse($models[$id]['reseller'] ?? '');
+                            $resellerProfit = $reseller !== null ? bcsub($reseller, $cost->hpp, 2) : null;
+                        @endphp
+                        @if ($reseller !== null && bccomp($reseller, '0', 2) > 0)
+                            <p class="text-xs text-muted-foreground">
+                                {{ __('pricing.reseller_profit') }}
+                                <x-amount :value="$resellerProfit" @class(['text-xs font-semibold', 'text-danger' => (float) $resellerProfit < 0, 'text-success' => (float) $resellerProfit >= 0]) />
+                                ({{ \App\Support\Decimal::display(bcdiv(bcmul($resellerProfit, '100', 4), $reseller, 1)) }}%)
+                            </p>
+                        @endif
 
                         @include('livewire.pricing.quote-table', ['quotes' => $calculator->quotesFor($cost), 'productId' => $id])
                     </div>
@@ -179,9 +206,14 @@
                     <p class="card-hint mt-0.5">{{ __('pricing.bundle_hint') }}</p>
                 </div>
 
-                <x-field :label="__('pricing.bundle_price')" for="bundlePrice" :error="$errors->first('bundlePrice')">
-                    <x-money-input model="bundlePrice" live :invalid="$errors->has('bundlePrice')" />
-                </x-field>
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <x-field :label="__('pricing.bundle_price')" for="bundlePrice" :error="$errors->first('bundlePrice')">
+                        <x-money-input model="bundlePrice" live :invalid="$errors->has('bundlePrice')" />
+                    </x-field>
+                    <x-field :label="__('pricing.strike_price')" for="bundleStrikePrice" :error="$errors->first('bundleStrikePrice')">
+                        <x-money-input model="bundleStrikePrice" :invalid="$errors->has('bundleStrikePrice')" />
+                    </x-field>
+                </div>
 
                 <dl class="space-y-1.5 rounded-xl border border-hairline p-3.5 text-sm">
                     <div class="flex justify-between gap-3">
@@ -203,6 +235,35 @@
                 @include('livewire.pricing.quote-table', ['quotes' => $calculator->bundleQuotes()])
             </section>
         </div>
+
+        {{-- Promo and capital --}}
+        <section class="panel-padded space-y-4">
+            <div>
+                <h2 class="card-title">{{ __('pricing.promo_capital_title') }}</h2>
+                <p class="card-hint mt-0.5">{{ __('pricing.promo_capital_hint') }}</p>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <x-field :label="__('pricing.promo_cost')" for="promoCost" :hint="__('pricing.promo_cost_hint')" :error="$errors->first('promoCost')">
+                    <x-money-input model="promoCost" live :invalid="$errors->has('promoCost')" />
+                </x-field>
+                <x-field :label="__('pricing.available_capital')" for="availableCapital" :hint="__('pricing.available_capital_hint')" :error="$errors->first('availableCapital')">
+                    <x-money-input model="availableCapital" live :invalid="$errors->has('availableCapital')" />
+                </x-field>
+            </div>
+            @php
+                $available = \App\Support\Money::parse($availableCapital);
+                $gap = $available !== null ? bcsub($available, $calculator->capital(), 2) : null;
+            @endphp
+            @if ($gap !== null)
+                <div @class(['flex flex-wrap items-center justify-between gap-2 rounded-xl border p-3.5 text-sm', 'border-success/40 bg-success-soft text-success' => (float) $gap >= 0, 'border-danger/40 bg-danger-soft text-danger' => (float) $gap < 0])>
+                    <span class="font-semibold">{{ (float) $gap >= 0 ? __('pricing.capital_enough') : __('pricing.capital_short') }}</span>
+                    <span>
+                        {{ __('pricing.capital_need') }} <x-amount :value="$calculator->capital()" class="font-semibold" />
+                        · {{ (float) $gap >= 0 ? __('pricing.capital_left') : __('pricing.capital_missing') }} <x-amount :value="ltrim($gap, '-')" class="font-semibold" />
+                    </span>
+                </div>
+            @endif
+        </section>
 
         {{-- Projection --}}
         <section class="panel-padded space-y-4">

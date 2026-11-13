@@ -66,7 +66,7 @@ final class PagesTest extends TestCase
             ->assertSee('Rp 25.000.000')
             ->assertSee(__('navigation.brand'))
             ->assertSee('Koleksi #1 · Linen Senja')
-            ->assertSee('Fase 2 dari 6 · Desain &amp; Material', false);
+            ->assertSee('Step 1 dari 9 · Buat Model');
     }
 
     public function test_brand_name_replaces_working_name_once_set(): void
