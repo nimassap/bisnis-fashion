@@ -110,6 +110,46 @@ final class Business extends Model
     }
 
     /**
+     * @return HasOne<BrandProfile, $this>
+     */
+    public function brandProfile(): HasOne
+    {
+        return $this->hasOne(BrandProfile::class);
+    }
+
+    /**
+     * The brand profile, created empty the first time it is asked for.
+     */
+    public function profile(): BrandProfile
+    {
+        return $this->brandProfile()->firstOrCreate([]);
+    }
+
+    /**
+     * @return HasMany<Competitor, $this>
+     */
+    public function competitors(): HasMany
+    {
+        return $this->hasMany(Competitor::class)->orderBy('id');
+    }
+
+    /**
+     * @return HasMany<BrandNameCandidate, $this>
+     */
+    public function nameCandidates(): HasMany
+    {
+        return $this->hasMany(BrandNameCandidate::class)->orderBy('id');
+    }
+
+    /**
+     * @return HasMany<BrandAsset, $this>
+     */
+    public function brandAssets(): HasMany
+    {
+        return $this->hasMany(BrandAsset::class)->latest('id');
+    }
+
+    /**
      * @return HasMany<SalesChannel, $this>
      */
     public function salesChannels(): HasMany

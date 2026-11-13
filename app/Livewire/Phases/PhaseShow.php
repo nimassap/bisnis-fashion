@@ -12,10 +12,12 @@ use App\Models\Decision;
 use App\Models\Phase;
 use App\Models\PhaseTask;
 use App\Services\PhaseBoard;
+use App\Services\StepRequirements;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 /**
@@ -327,6 +329,13 @@ final class PhaseShow extends Component
         $this->toastInfo(__('phases.phase_reopened', ['name' => $phase->name()]));
     }
 
+    /**
+     * A form inside the step saved something: redraw so the requirements
+     * and progress follow.
+     */
+    #[On('step-updated')]
+    public function refreshStep(): void {}
+
     // ── Rendering ──────────────────────────────────────────────────────
 
     public function render(CompletePhase $complete, ReopenPhase $reopen): View
@@ -342,6 +351,7 @@ final class PhaseShow extends Component
             'status' => $board->status($phase),
             'tasks' => $phase->tasks()->get(),
             'decisions' => $phase->decisions()->get(),
+            'requirements' => StepRequirements::for($phase),
             'completeBlocker' => $complete->blocker($phase),
             'reopenBlocker' => $phase->isCompleted() ? $reopen->blocker($phase) : null,
             'deletingTask' => $this->deletingTaskId ? PhaseTask::find($this->deletingTaskId) : null,

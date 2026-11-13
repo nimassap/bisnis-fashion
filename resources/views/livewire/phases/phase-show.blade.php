@@ -11,7 +11,7 @@
     @endif
 
     <x-page-header
-        :eyebrow="__('dashboard.phase_position', ['current' => $phase->position, 'total' => count(config('phases'))])"
+        :eyebrow="$phase->positionLabel()"
         :title="$phase->name()"
         :subtitle="$phase->isBrandPhase() ? __('phases.brand_subtitle') : $phase->summary()"
     >
@@ -25,7 +25,7 @@
     {{-- Progress and closing --}}
     <section class="panel-padded space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
-            <span class="numeric font-semibold text-foreground">{{ __('phases.progress', ['done' => $phase->done_tasks_count, 'total' => $phase->tasks_count]) }}</span>
+            <span class="numeric font-semibold text-foreground">{{ __('phases.progress', $phase->progressCounts()) }}</span>
             <span class="numeric text-muted-foreground">{{ $phase->progress() }}%</span>
         </div>
         <x-progress-bar :percentage="$phase->progress()" :tone="$phase->isCompleted() ? 'success' : 'primary'" :label="$phase->name()" />
@@ -66,13 +66,35 @@
         @endif
     </section>
 
+    {{-- What this step needs, read from the data below. --}}
+    @if ($requirements !== [])
+        <section class="panel-padded space-y-3">
+            <h2 class="card-title">{{ __('steps.requirements_title') }}</h2>
+            <ul class="grid gap-2 sm:grid-cols-2">
+                @foreach ($requirements as $requirement)
+                    <li class="flex items-start gap-2 text-sm {{ $requirement->met ? 'text-foreground' : 'text-muted-foreground' }}">
+                        <x-icon :name="$requirement->met ? 'check-circle' : 'x-circle'" class="mt-0.5 size-4 shrink-0 {{ $requirement->met ? 'text-success' : 'text-muted-foreground' }}" />
+                        <span>{{ $requirement->label }}</span>
+                    </li>
+                @endforeach
+            </ul>
+        </section>
+    @endif
+
+    {{-- The step's own forms. --}}
+    @if ($phase->key === 'setup')
+        <livewire:setup.brand-setup :key="'brand-setup-'.$phase->id" />
+    @elseif (view()->exists('livewire.phases.steps.'.$phase->key))
+        @include('livewire.phases.steps.'.$phase->key)
+    @endif
+
     <div class="grid gap-6 lg:grid-cols-5">
         {{-- Checklist --}}
         <section class="panel-padded lg:col-span-3">
             <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
                     <h2 class="card-title">{{ __('phases.checklist') }}</h2>
-                    <p class="card-hint mt-0.5">{{ __('phases.gate_hint') }}</p>
+                    <p class="card-hint mt-0.5">{{ __('phases.checklist_hint') }}</p>
                 </div>
 
                 @if ($editable)

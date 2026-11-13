@@ -10,7 +10,7 @@ return [
     'section_account' => 'Akun',
 
     'dashboard' => 'Dashboard',
-    'brand' => 'Fondasi Brand',
+    'brand' => 'Setup Brand',
     'collections' => 'Koleksi',
     'products' => 'Produk',
     'fabrics' => 'Kain',

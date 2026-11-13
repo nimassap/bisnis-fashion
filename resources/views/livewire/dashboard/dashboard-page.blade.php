@@ -18,7 +18,7 @@
                 <p class="numeric text-3xl font-bold text-foreground">{{ $brandPhase->progress() }}%</p>
                 <x-progress-bar :percentage="$brandPhase->progress()" size="sm" :label="__('navigation.brand')" />
             @endif
-            <p class="text-xs text-muted-foreground">{{ __('phases.progress', ['done' => $brandPhase->done_tasks_count, 'total' => $brandPhase->tasks_count]) }}</p>
+            <p class="text-xs text-muted-foreground">{{ __('phases.progress', $brandPhase->progressCounts()) }}</p>
         </a>
 
         <a href="{{ route('collections.index') }}" wire:navigate class="panel flex flex-col gap-2 p-4 transition hover:-translate-y-0.5 sm:p-5">
@@ -107,7 +107,7 @@
                         <a href="{{ route('collections.show', $row->collection) }}" wire:navigate class="flex flex-col gap-2.5 rounded-xl border border-hairline p-3.5 transition hover:bg-secondary">
                             <div class="flex flex-wrap items-center justify-between gap-2">
                                 <p class="min-w-0 truncate text-sm font-semibold text-foreground">{{ $row->collection->label() }}</p>
-                                <x-status-badge tone="primary" :label="__('dashboard.phase_position', ['current' => $active->position, 'total' => $row->board->phases()->count()]).' · '.$active->name()" />
+                                <x-status-badge tone="primary" :label="$active->positionLabel().' · '.$active->name()" />
                             </div>
 
                             <x-progress-bar :percentage="$row->board->overallProgress()" size="sm" :label="$row->collection->label()" />

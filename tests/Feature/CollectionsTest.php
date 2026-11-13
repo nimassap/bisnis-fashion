@@ -48,7 +48,7 @@ final class CollectionsTest extends TestCase
         $collection = $this->business->collections()->sole();
         $this->assertSame(1, $collection->number);
         $this->assertSame('Koleksi #1 · Linen Senja', $collection->label());
-        $this->assertSame(5, $collection->phases()->count());
+        $this->assertSame(9, $collection->phases()->count());
     }
 
     public function test_name_is_optional(): void
@@ -84,12 +84,12 @@ final class CollectionsTest extends TestCase
 
         $this->get('/collections')->assertOk()
             ->assertSee('Linen Senja')
-            ->assertSee('Desain &amp; Material', false);
+            ->assertSee('Buat Model');
 
         $this->get("/collections/{$collection->id}")->assertOk()
             ->assertSee('Linen Senja')
-            ->assertSee('Sourcing &amp; Sampel', false)
-            ->assertSee('Launch &amp; Operasional', false);
+            ->assertSee('Sampling')
+            ->assertSee('Launching');
     }
 
     public function test_owner_can_edit_a_collection(): void

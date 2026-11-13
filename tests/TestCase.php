@@ -2,12 +2,20 @@
 
 namespace Tests;
 
+use App\Services\StepRequirements;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Http\Testing\File;
 use Illuminate\Http\UploadedFile;
 
 abstract class TestCase extends BaseTestCase
 {
+    protected function tearDown(): void
+    {
+        StepRequirements::fakeUsing(null);
+
+        parent::tearDown();
+    }
+
     /**
      * A real 1×1 PNG. UploadedFile::fake()->image() needs the GD extension,
      * which is not guaranteed to be installed; this needs nothing.

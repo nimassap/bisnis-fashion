@@ -1,0 +1,144 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services;
+
+use App\Enums\Gender;
+use App\Enums\OrderStatus;
+use App\Enums\SampleStatus;
+use App\Enums\VendorType;
+use App\Models\Business;
+use App\Models\Collection;
+use App\Models\Phase;
+use App\Models\Product;
+
+/**
+ * What a step needs before it can be closed, read from the data the owner
+ * has filled in. A step is never closed by ticking boxes alone.
+ *
+ * Steps whose forms are still to come have only the requirements their
+ * existing data can answer; the rest are added as each step gets its form.
+ */
+final class StepRequirements
+{
+    /** @var (callable(Phase): list<object>)|null Replaces the real checks, in tests only. */
+    private static $fake = null;
+
+    /**
+     * Tests of how steps open and close swap the data checks out with this.
+     *
+     * @param  (callable(Phase): list<object>)|null  $callback
+     */
+    public static function fakeUsing(?callable $callback): void
+    {
+        self::$fake = $callback;
+    }
+
+    /**
+     * @return list<object{label: string, met: bool}>
+     */
+    public static function for(Phase $phase): array
+    {
+        if (self::$fake !== null) {
+            return (self::$fake)($phase);
+        }
+
+        $business = $phase->business;
+        $collection = $phase->collection;
+
+        $checks = match ($phase->key) {
+            'setup' => self::setup($business),
+            'model' => self::model($collection),
+            'sampling' => self::sampling($collection),
+            'costing' => self::costing($collection),
+            'launch' => self::launch($collection),
+            default => [],
+        };
+
+        return array_map(
+            fn (array $check) => (object) ['label' => __("steps.requirements.{$check[0]}", $check[2] ?? []), 'met' => (bool) $check[1]],
+            $checks,
+        );
+    }
+
+    /**
+     * @return list<object{label: string, met: bool}>
+     */
+    public static function unmet(Phase $phase): array
+    {
+        return array_values(array_filter(self::for($phase), fn (object $r) => ! $r->met));
+    }
+
+    /**
+     * @return list<array{0: string, 1: bool, 2?: array<string, mixed>}>
+     */
+    private static function setup(Business $business): array
+    {
+        $profile = $business->brandProfile;
+        $assets = $business->brandAssets()->pluck('kind')->unique();
+
+        return [
+            ['target_market', (bool) $profile?->hasTargetMarket()],
+            ['competitors', $business->competitors()->count() >= 3, ['count' => 3]],
+            ['price_range', (bool) $profile?->hasPriceRange()],
+            ['final_name', $business->nameCandidates()->where('is_final', true)->exists()],
+            ['logo', $assets->contains('logo')],
+            ['label_hangtag', $assets->contains('label') && $assets->contains('hangtag')],
+            ['packaging', $assets->contains('packaging')],
+            ['capital', $business->starting_capital !== null],
+            ['makers_listed', $business->vendors()->where('type', VendorType::Maker)->exists()],
+            ['fabrics_listed', $business->fabrics()->exists()],
+        ];
+    }
+
+    private static function model(Collection $collection): array
+    {
+        $products = $collection->products()->with('sizes')->get();
+        $both = $products->pluck('gender')->unique()->count() === 2;
+
+        return [
+            ['both_models', $both],
+            ['model_photos', $both && $products->every(fn (Product $p) => $p->photo_path !== null)],
+            ['model_colors', $both && $products->every(fn (Product $p) => $p->colorList() !== [])],
+            ['size_charts', $both && $products->every(
+                fn (Product $p) => $p->sizes->contains(fn ($size) => collect($size->measurements ?? [])->filter(fn ($v) => $v !== null && $v !== '')->isNotEmpty()),
+            )],
+        ];
+    }
+
+    private static function sampling(Collection $collection): array
+    {
+        $products = $collection->products()->with('samples')->get();
+
+        $approved = fn (Gender $gender) => $products
+            ->firstWhere('gender', $gender)
+            ?->samples->contains('status', SampleStatus::Approved) ?? false;
+
+        return [
+            ['women_sample_approved', $approved(Gender::Women)],
+            ['men_sample_approved', $approved(Gender::Men)],
+        ];
+    }
+
+    private static function costing(Collection $collection): array
+    {
+        $products = $collection->products()->get();
+
+        return [
+            ['single_prices', $products->count() === 2 && $products->every(fn (Product $p) => $p->price !== null)],
+            ['bundle_price', $collection->bundle_price !== null],
+        ];
+    }
+
+    private static function launch(Collection $collection): array
+    {
+        $sold = $collection->products()
+            ->whereHas('variants.orderItems.order', fn ($q) => $q->where('status', OrderStatus::Completed))
+            ->exists();
+
+        return [
+            ['first_order', $sold],
+        ];
+    }
+}

@@ -7,6 +7,7 @@ namespace App\Actions\Phases;
 use App\Exceptions\PhaseException;
 use App\Models\Phase;
 use App\Services\PhaseBoard;
+use App\Services\StepRequirements;
 
 final class CompletePhase
 {
@@ -23,6 +24,12 @@ final class CompletePhase
 
         if ($previous !== null && ! $previous->isCompleted()) {
             return __('phases.blocked_previous', ['name' => $previous->name()]);
+        }
+
+        $unmet = StepRequirements::unmet($phase);
+
+        if ($unmet !== []) {
+            return trans_choice('phases.blocked_requirements', count($unmet), ['count' => count($unmet)]);
         }
 
         $openGates = $phase->tasks()->where('is_gate', true)->whereNull('completed_at')->count();
